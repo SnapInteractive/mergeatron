@@ -1,5 +1,6 @@
 var GitHubApi = require('github'),
 	config = require('./config').config,
+	responses = require('./responses').responses,
 	request = require('request'),
 	url = require('url'),
 	uuid = require('node-uuid'),
@@ -15,6 +16,10 @@ GitHub.authenticate({
 	username: config.github.auth.user,
 	password: config.github.auth.pass
 });
+
+Array.prototype.randomValue = function() {
+	return this[Math.floor(Math.random() * this.length)];
+};
 
 async.parallel({
 	'github': function() {
@@ -38,16 +43,17 @@ async.parallel({
 					}
 
 					if (config.jenkins.rules) {
-						GitHub.pullRequests.getFiles({ 'user': config.github.user, 'repo': config.github.repo, 'number': number }, function(error, resp) {
-							for (var x in resp) {
-								var file_name = resp[x].filename;
+						var pull_request = pull;
+						GitHub.pullRequests.getFiles({ 'user': config.github.user, 'repo': config.github.repo, 'number': number }, function(error, files) {
+							for (var x in files) {
+								var file_name = files[x].filename;
 								if (!file_name || file_name == 'undefined') {
 									continue;
 								}
 
 								for (var y in config.jenkins.rules) {
 									if (file_name.match(config.jenkins.rules[y])) {
-										processPull(pull);
+										processPull(pull_request);
 										return;
 									}
 								}
@@ -168,10 +174,10 @@ function checkJob(job_id) {
 
 						if (job['status'] != 'finished') {
 							if (build['result'] == 'FAILURE') {
-								comment(job['pull'], ":-1: Defeated\n" + build['url'] + '/console');
+								comment(job['pull'],  responses.failure.randomValue() + "\n" + build['url'] + '/console');
 								mongo.jobs.update({ _id: job_id }, { $set: { status: 'finished' } });
 							} else if (build['result'] == 'SUCCESS') {
-								comment(job['pull'], ':+1: Victory!');
+								comment(job['pull'], responses.success.randomValue());
 								mongo.jobs.update({ _id: job_id }, { $set: { status: 'finished' } });
 							}
 						}
