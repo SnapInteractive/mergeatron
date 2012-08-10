@@ -39,6 +39,7 @@ To configure Mergeatron copy the `config.sample.js` file to `config.js` in the s
  * `jenkins.host - The host of the URL, without backslash, to your Jenkins install.
  * `jenkins.project` - The name of the project within Jenkins you want to build.
  * `jenkins.frequency` - The frequency, in milliseconds, to poll Jenkins for updated build information. Increasing this will increase the time between when a build is started and Mergeatron knows it finished. Decreasing it too low can cause your Jenkins server to come under heavy load.
+ * `jenkins.rules` - An array of regular expressions that will be run against each file name in the pull request. A jenkins build will only be triggered if at least one file matches at least one rule.
  * `github.auth.username` - The username of the GitHub user Mergeatron will be logging in, and posting, as. This user must have visibility to your repos Pull Requests.
  * `github.auth.password` - The password for the GitHub user Mergeatron will be using.
  * `github.user` - The user whose GitHub repo Mergeatron will be checking for Pull Requests. Does not need to be the same as the `github.auth.username` user.
