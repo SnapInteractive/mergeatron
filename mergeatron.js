@@ -37,7 +37,25 @@ async.parallel({
 						continue;
 					}
 
-					processPull(pull);
+					if (config.jenkins.rules) {
+						GitHub.pullRequests.getFiles({ 'user': config.github.user, 'repo': config.github.repo, 'number': number }, function(error, resp) {
+							for (var x in resp) {
+								var file_name = resp[x].filename;
+								if (!file_name || file_name == 'undefined') {
+									continue;
+								}
+
+								for (var y in config.jenkins.rules) {
+									if (file_name.match(config.jenkins.rules[y])) {
+										processPull(pull);
+										return;
+									}
+								}
+							}
+						});
+					} else {
+						processPull(pull);
+					}
 				}
 			});
 

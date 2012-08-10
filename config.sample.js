@@ -6,7 +6,8 @@ exports.config = {
 		protocol: 'http',
 		host: 'jenkins.yoururl.com:8080',
 		project: 'project_name',
-		frequency: 2000
+		frequency: 2000,
+		rules: [ new RegExp(/.php/g) ]
 	},
 	github: {
 		auth: {
