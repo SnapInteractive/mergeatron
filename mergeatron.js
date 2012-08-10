@@ -1,10 +1,10 @@
 var GitHubApi = require('github'),
-	mongo = require('mongojs').connect('mergeatron', ['pulls', 'jobs']),
+	config = require('./config').config,
 	request = require('request'),
 	url = require('url'),
 	uuid = require('node-uuid'),
 	async = require('async'),
-	config = require('./config').config;
+	mongo = require('mongojs').connect(config.mongo, ['pulls', 'jobs']);
 
 var GitHub = new GitHubApi({
 		version: '3.0.0'

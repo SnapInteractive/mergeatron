@@ -33,6 +33,7 @@ Mergeatron is intended to assist with reviewing Pull Requests by providing, at a
 
 To configure Mergeatron copy the `config.sample.js` file to `config.js` in the same directory. The settings you will need to change are:
 
+ * `mongo` - This is the connection string to use for mongo. For more information on this see the [mongojs](https://github.com/gett/mongojs) documentation.
  * `jenkins.token` - This is a token you setup with your project. In your job configuration, within Jenkins, look for the option labeled 'Trigger builds remotely (e.g., from scripts)'.
  * `jenkins.protocol` - Either `http` or `https` depending on your setup.
  * `jenkins.host - The host of the URL, without backslash, to your Jenkins install.

@@ -1,5 +1,6 @@
 // Rename, or copy, to config.js in the same directory
 exports.config = {
+	mongo: 'mergeatron',
 	jenkins:  {
 		token: 'token',
 		protocol: 'http',
