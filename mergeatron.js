@@ -73,7 +73,12 @@ async.parallel({
 
 	'jenkins': function() {
 		var run_jenkins = function() {
-			mongo.jobs.find({ status: { $ne: 'finished' } }).forEach(function(error, item) {
+			mongo.jobs.find({ status: { $ne: 'finished' } }).forEach(function(err, item) {
+				if (err) {
+					console.log(err);
+					process.exit(1);
+				}
+
 				if (!item) { return; }
 				checkJob(item['_id']);
 			});
@@ -93,7 +98,10 @@ function processPull(pull) {
 
 		if (!item) {
 			new_pull = true;
-			mongo.pulls.insert({ _id: pull.number, created_at: pull.created_at, updated_at: pull.updated_at, head: pull.head.sha });
+			mongo.pulls.insert({ _id: pull.number, created_at: pull.created_at, updated_at: pull.updated_at, head: pull.head.sha }, function(err) {
+				console.log(err);
+				process.exit(1);
+			});
 		}
 
 		if (new_pull || pull.head.sha != item.head) {
