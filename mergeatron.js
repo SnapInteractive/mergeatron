@@ -38,7 +38,7 @@ async.parallel({
 						continue;
 					}
 
-					if (pull.body.indexOf('@' + config.github.auth.user + ' ignore') != -1) {
+					if (pull.body && pull.body.indexOf('@' + config.github.auth.user + ' ignore') != -1) {
 						continue;
 					}
 
