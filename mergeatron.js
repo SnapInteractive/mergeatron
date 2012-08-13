@@ -38,27 +38,12 @@ async.parallel({
 						continue;
 					}
 
-					if (pull.body.indexOf('@' + config.github.user + ' ignore') != -1) {
+					if (pull.body.indexOf('@' + config.github.auth.user + ' ignore') != -1) {
 						continue;
 					}
 
 					if (config.jenkins.rules) {
-						var pull_request = pull;
-						GitHub.pullRequests.getFiles({ 'user': config.github.user, 'repo': config.github.repo, 'number': number }, function(error, files) {
-							for (var x in files) {
-								var file_name = files[x].filename;
-								if (!file_name || file_name == 'undefined') {
-									continue;
-								}
-
-								for (var y in config.jenkins.rules) {
-									if (file_name.match(config.jenkins.rules[y])) {
-										processPull(pull_request);
-										return;
-									}
-								}
-							}
-						});
+						checkFiles(rules);
 					} else {
 						processPull(pull);
 					}
@@ -90,6 +75,29 @@ async.parallel({
 	}
 });
 
+function checkFiles(pull) {
+	GitHub.pullRequests.getFiles({ 'user': config.github.user, 'repo': config.github.repo, 'number': pull.number }, function(err, files) {
+		if (err) {
+			console.log(err);
+			return;
+		}
+
+		for (var x in files) {
+			var file_name = files[x].filename;
+			if (!file_name || file_name == 'undefined') {
+				continue;
+			}
+
+			for (var y in config.jenkins.rules) {
+				if (file_name.match(config.jenkins.rules[y])) {
+					processPull(pull);
+					return;
+				}
+			}
+		}
+	});
+}
+
 function processPull(pull) {
 	mongo.pulls.findOne({ _id: pull.number }, function(error, item) {
 		var new_pull = false,
@@ -111,7 +119,7 @@ function processPull(pull) {
 
 		GitHub.issues.getComments({ user: config.github.user, repo: config.github.repo, number: pull.number, per_page: 100 }, function(error, resp) {
 			for (i in resp) {
-				if (resp[i].created_at > item.updated_at && resp[i].body.indexOf('@' + config.github.user + ' retest') != -1) {
+				if (resp[i].created_at > item.updated_at && resp[i].body.indexOf('@' + config.github.auth.user + ' retest') != -1) {
 					comment(pull.number, 'Got it @' + resp[i].user.login + '. Queueing up a new build.');
 					buildPull(pull.number, pull.head.sha, ssh_url, branch, pull.updated_at);
 					return;
