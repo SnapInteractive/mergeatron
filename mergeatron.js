@@ -176,7 +176,7 @@ function checkJob(job_id) {
 
 	request(options, function(error, response) {
 		response.body.builds.forEach(function(build) {
-			if (typeof build.actions[0].parameters == undefined || !build.actions[0].parameters) {
+			if (typeof build.actions == undefined || typeof build.actions[0].parameters == undefined || !build.actions[0].parameters) {
 				return;
 			}
 
