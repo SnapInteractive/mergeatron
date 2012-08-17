@@ -1,61 +1,48 @@
-var GitHubApi = require('github'),
-	config = require('./config').config,
+var config = require('./config').config,
 	responses = require('./responses').responses,
 	request = require('request'),
 	url = require('url'),
 	uuid = require('node-uuid'),
 	async = require('async'),
-	mongo = require('mongojs').connect(config.mongo, ['pulls', 'jobs']);
-
-var GitHub = new GitHubApi({
-		version: '3.0.0'
-	});
-
-GitHub.authenticate({
-	type: 'basic',
-	username: config.github.auth.user,
-	password: config.github.auth.pass
-});
+	mongo = require('mongojs').connect(config.mongo, ['pulls', 'jobs']),
+	fs = require('fs'),
+	events = require('events');
 
 Array.prototype.randomValue = function() {
 	return this[Math.floor(Math.random() * this.length)];
 };
 
+var Mergeatron = function() {};
+Mergeatron.prototype = new events.EventEmitter;
+mergeatron = new Mergeatron();
+
+fs.readdir(config.plugins_dir, function(err, files) {
+	if (err) {
+		console.log(err);
+		return;
+	}
+
+	for (var i = 0, l = files.length; i < l; i++) {
+		var filename = config.plugins_dir + files[i],
+			pluginName = files[i].split('.', 2)[0],
+			conf = { enabled: true };
+
+		console.log('Loading plugin: ' + pluginName);
+
+		if (config.plugins && config.plugins[pluginName]) {
+			conf = config.plugins[pluginName];
+		}
+
+		if (conf.enabled == undefined || conf.enabled) {
+			console.log(conf);
+			require(filename).init(conf, mergeatron);
+		} else {
+			console.log('Not loading disabled plugin ' + pluginName);
+		}
+	}
+});
+
 async.parallel({
-	'github': function() {
-		var run_github = function() {
-			GitHub.pullRequests.getAll({ 'user': config.github.user, 'repo': config.github.repo, 'state': 'open' }, function(error, resp) {
-				if (error) {
-					console.log(error);
-					return;
-				}
-
-				for (i in resp) {
-					var pull = resp[i],
-						number = pull.number;
-
-					if (!number || number == 'undefined') {
-						continue;
-					}
-
-					if (pull.body && pull.body.indexOf('@' + config.github.auth.user + ' ignore') != -1) {
-						continue;
-					}
-
-					if (config.jenkins.rules) {
-						checkFiles(rules);
-					} else {
-						processPull(pull);
-					}
-				}
-			});
-
-			setTimeout(run_github, config.github.frequency);
-		};
-
-		run_github();
-	},
-
 	'jenkins': function() {
 		var run_jenkins = function() {
 			mongo.jobs.find({ status: { $ne: 'finished' } }).forEach(function(err, item) {
@@ -74,60 +61,6 @@ async.parallel({
 		run_jenkins();
 	}
 });
-
-function checkFiles(pull) {
-	GitHub.pullRequests.getFiles({ 'user': config.github.user, 'repo': config.github.repo, 'number': pull.number }, function(err, files) {
-		if (err) {
-			console.log(err);
-			return;
-		}
-
-		for (var x in files) {
-			var file_name = files[x].filename;
-			if (!file_name || file_name == 'undefined') {
-				continue;
-			}
-
-			for (var y in config.jenkins.rules) {
-				if (file_name.match(config.jenkins.rules[y])) {
-					processPull(pull);
-					return;
-				}
-			}
-		}
-	});
-}
-
-function processPull(pull) {
-	mongo.pulls.findOne({ _id: pull.number }, function(error, item) {
-		var new_pull = false,
-			ssh_url = pull.head.repo.ssh_url,
-			branch = 'origin/' + pull.head.label.split(':')[1];
-
-		if (!item) {
-			new_pull = true;
-			mongo.pulls.insert({ _id: pull.number, created_at: pull.created_at, updated_at: pull.updated_at, head: pull.head.sha }, function(err) {
-				console.log(err);
-				process.exit(1);
-			});
-		}
-
-		if (new_pull || pull.head.sha != item.head) {
-			buildPull(pull.number, pull.head.sha, ssh_url, branch, pull.updated_at);
-			return;
-		}
-
-		GitHub.issues.getComments({ user: config.github.user, repo: config.github.repo, number: pull.number, per_page: 100 }, function(error, resp) {
-			for (i in resp) {
-				if (resp[i].created_at > item.updated_at && resp[i].body.indexOf('@' + config.github.auth.user + ' retest') != -1) {
-					comment(pull.number, 'Got it @' + resp[i].user.login + '. Queueing up a new build.');
-					buildPull(pull.number, pull.head.sha, ssh_url, branch, pull.updated_at);
-					return;
-				}
-			}
-		});
-	});
-}
 
 function buildPull(number, sha, ssh_url, branch, updated_at) {
 	var job_id = uuid.v1(),
@@ -202,8 +135,4 @@ function checkJob(job_id) {
 			});
 		});
 	});
-}
-
-function comment(pull_number, comment) {
-	GitHub.issues.createComment({ user: config.github.user, repo: config.github.repo, number: pull_number, body: comment });
 }
