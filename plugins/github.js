@@ -58,6 +58,18 @@ exports.init = function(config, mergeatron) {
 		comment(pull_number, responses.success.randomValue());
 	});
 
+	mergeatron.on('line_violation', function(job_id, pull_number, sha, file, position) {
+		GitHub.pullRequests.createComment({
+			user: config.user,
+			repo: config.repo,
+			number: pull_number,
+			body: comment,
+			commit_id: sha,
+			path: file,
+			position: position
+		});
+	});
+
 	function checkFiles(pull) {
 		GitHub.pullRequests.getFiles({ 'user': config.user, 'repo': config.repo, 'number': pull.number }, function(err, files) {
 			if (err) {
@@ -91,6 +103,7 @@ exports.init = function(config, mergeatron) {
 				new_pull = true;
 				mergeatron.mongo.pulls.insert({ _id: pull.number, created_at: pull.created_at, updated_at: pull.updated_at, head: pull.head.sha }, function(err) {
 					if (err) {
+						console.log(err);
 						process.exit(1);
 					}
 				});
