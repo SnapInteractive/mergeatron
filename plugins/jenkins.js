@@ -28,6 +28,11 @@ exports.init = function(config, mergeatron) {
 	});
 
 	mergeatron.on('build_check_files', function(pull, files) {
+		if (!config.rules) {
+			mergeatron.emit('build_process', pull);
+			return;
+		}
+
 		for (var x in files) {
 			if (!files[x] || typeof files[x] != 'string') {
 				continue;
