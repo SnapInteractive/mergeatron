@@ -1,3 +1,9 @@
+v0.1.2
+=====
+* Add support for parsing PHP Code Sniffer results
+* Re-do which parameters are passed to event listeners
+* Merge the `jobs` and `pulls` MongoDB collections into a single collection
+
 v0.1.1
 =====
 * Added support for GitHub Commit Statuses API

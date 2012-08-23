@@ -1,6 +1,6 @@
 {
 	"name": "Mergeatron",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"author": "Steven Surowiec<steven.surowiec@gmail.com>",
 	"description": "A helpful PR monitor that runs jenkins builds when Pull Requests are created and updated",
 

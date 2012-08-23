@@ -24,7 +24,7 @@ exports.init = function(config, mergeatron) {
 		}
 	});
 
-	mergeatron.on('build_triggered', function(pull, pull_number, sha, ssh_url, branch, updated_at, triggered_by) {
+	mergeatron.on('build.triggered', function(pull, pull_number, sha, ssh_url, branch, updated_at, triggered_by) {
 		buildPull(pull, pull_number, sha, ssh_url, branch, updated_at);
 	});
 
@@ -41,7 +41,7 @@ exports.init = function(config, mergeatron) {
 
 			for (var y in config.rules) {
 				if (pull.files[x].filename.match(config.rules[y])) {
-					mergeatron.emit('build_process', pull);
+					mergeatron.emit('build.process', pull);
 					return;
 				}
 			}
@@ -54,21 +54,21 @@ exports.init = function(config, mergeatron) {
 	function buildPull(pull, number, sha, ssh_url, branch, updated_at) {
 		var job_id = uuid.v1(),
 			options = {
-			url: url.format({
-				protocol: config.protocol,
-				host: config.host,
-				pathname: '/job/' + config.project + '/buildWithParameters',
-				query: {
-					token: config.token,
-					cause: 'Testing Pull Request: ' + number,
-					REPOSITORY_URL: ssh_url,
-					BRANCH_NAME: branch,
-					JOB: job_id,
-					PULL: number
-				}
-			}),
-			method: 'GET',
-		};
+				url: url.format({
+					protocol: config.protocol,
+					host: config.host,
+					pathname: '/job/' + config.project + '/buildWithParameters',
+					query: {
+						token: config.token,
+						cause: 'Testing Pull Request: ' + number,
+						REPOSITORY_URL: ssh_url,
+						BRANCH_NAME: branch,
+						JOB: job_id,
+						PULL: number
+					}
+				}),
+				method: 'GET',
+			};
 
 		request(options, function(error, response, body) {
 			if (error) {
@@ -120,12 +120,12 @@ exports.init = function(config, mergeatron) {
 						if (job.status != 'finished') {
 							if (build['result'] == 'FAILURE') {
 								mergeatron.mongo.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'finished' } });
-								mergeatron.emit('build_failed', job, pull, build['url'] + 'console');
+								mergeatron.emit('build.failed', job, pull, build['url'] + 'console');
 
 								processArtifacts(build, pull);
 							} else if (build['result'] == 'SUCCESS') {
 								mergeatron.mongo.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'finished' } });
-								mergeatron.emit('build_succeeded', job, pull, build['url']);
+								mergeatron.emit('build.succeeded', job, pull, build['url']);
 
 								processArtifacts(build, pull);
 							}
@@ -157,8 +157,8 @@ exports.init = function(config, mergeatron) {
 
 			var artifacts = response.body.artifacts;
 			for (var i in artifacts) {
-				artifacts[i]['url'] = build['url'] + 'artifact/' + artifacts[i]['relative_url'];
-				mergeatron.emit('artifact_found', build, pull, artifacts[i]);
+				artifacts[i]['url'] = build['url'] + 'artifact/' + artifacts[i]['relativePath'];
+				mergeatron.emit('artifact.found', build, pull, artifacts[i]);
 			}
 		});
 	}

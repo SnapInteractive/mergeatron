@@ -45,23 +45,23 @@ exports.init = function(config, mergeatron) {
 		processPull(pull);
 	});
 
-	mergeatron.on('build.started', function(job_id, job, build_url) {
+	mergeatron.on('build.started', function(job, pull, build_url) {
 		createStatus(job['head'], 'pending', build_url, 'Testing Pull Request');
 	});
 
-	mergeatron.on('build.failed', function(job_id, job, build_url) {
+	mergeatron.on('build.failed', function(job, pull, build_url) {
 		createStatus(job['head'], 'failure', build_url, 'Build failed');
 	});
 
-	mergeatron.on('build.succeeded', function(job_id, job, build_url) {
+	mergeatron.on('build.succeeded', function(job, pull, build_url) {
 		createStatus(job['head'], 'success', build_url, 'Build succeeded');
 	});
 
-	mergeatron.on('line.violation', function(job_id, pull_number, sha, file, position) {
+	mergeatron.on('pull.inline_status', function(pull, sha, file, position, comment) {
 		GitHub.pullRequests.createComment({
 			user: config.user,
 			repo: config.repo,
-			number: pull_number,
+			number: pull.number,
 			body: comment,
 			commit_id: sha,
 			path: file,
@@ -77,14 +77,52 @@ exports.init = function(config, mergeatron) {
 			}
 
 			pull.files = [];
-			for (var x in files) {
-				var file_name = files[x].filename;
-				if (!file_name || file_name == 'undefined') {
-					continue;
+			files.forEach(function(file) {
+				if (!file.filename || file.filename == 'undefined') {
+					return;
 				}
 
-				pull.files.push(files[x]);
-			}
+				var start = null,
+					length = null,
+					deletions = [],
+					modified_length,
+					offset = 0.
+					line_number = 0;
+
+				file.ranges = [];
+				file.reported = [];
+				file.sha = file.blob_url.match(/blob\/([^\/]+)/)[1];
+				file.patch.split('\n').forEach(function(line) {
+					var matches = line.match(/^@@ -\d+,\d+ \+(\d+),(\d+) @@/);
+					if (matches) {
+						if (start == null && length == null) {
+							start = parseInt(matches[1]);
+							length = parseInt(matches[2]);
+							line_number = start;
+						} else {
+							// The one is for the line in the diff block containing the line numbers
+							modified_length = 1 + length + deletions.length;
+							file.ranges.push([ start, start + length, modified_length, offset, deletions ]);
+
+							deletions = [];
+							start = parseInt(matches[1]);
+							length = parseInt(matches[2]);
+							offset += modified_length;
+							line_number = start;
+						}
+					} else if (line.indexOf('-') === 0) {
+						deletions.push(line_number);
+					} else {
+						line_number += 1;
+					}
+				});
+
+				if (start != null && length != null) {
+					file.ranges.push([ start, start + length, 1 + length + deletions.length, offset, deletions ]);
+				}
+
+				pull.files.push(file);
+			});
 
 			if (pull.files.length > 0) {
 				mergeatron.emit('build.validate', pull);
@@ -106,11 +144,19 @@ exports.init = function(config, mergeatron) {
 						process.exit(1);
 					}
 				});
+				pull.jobs = [];
 			} else {
+				// Before updating the list of files in mongo we need to make sure the set of reported lines is saved
+				item.files.forEach(function(file) {
+					pull.files.forEach(function(pull_file, i) {
+						if (pull_file.filename == file.filename) {
+							pull.files[i].reported = file.reported;
+						}
+					});
+				});
 				mergeatron.mongo.pulls.update({ _id: pull.number }, { $set: { files: pull.files } });
+				pull.jobs = item.jobs;
 			}
-
-			pull.jobs = item.jobs || [];
 
 			if (new_pull || pull.head.sha != item.head) {
 				mergeatron.emit('build.triggered', pull, pull.number, pull.head.sha, ssh_url, branch, pull.updated_at);
