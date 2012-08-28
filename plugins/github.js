@@ -51,7 +51,7 @@ exports.init = function(config, mergeatron) {
 	});
 
 	mergeatron.on('build_failed', function(job_id, pull_number, build_url) {
-		comment(pull_number,  responses.failure.randomValue() + "\n" + build_url + '/console');
+		comment(pull_number,  responses.failure.randomValue() + "\n" + build_url);
 	});
 
 	mergeatron.on('build_succeeded', function(job_id, pull_number, build_url) {

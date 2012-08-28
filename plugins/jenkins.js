@@ -109,7 +109,7 @@ exports.init = function(config, mergeatron) {
 							if (job['status'] != 'finished') {
 								if (build['result'] == 'FAILURE') {
 									mergeatron.mongo.jobs.update({ _id: job_id }, { $set: { status: 'finished' } });
-									mergeatron.emit('build_failed', job_id, job['pull'], build['url']);
+									mergeatron.emit('build_failed', job_id, job['pull'], build['url'] + 'console');
 								} else if (build['result'] == 'SUCCESS') {
 									mergeatron.mongo.jobs.update({ _id: job_id }, { $set: { status: 'finished' } });
 									mergeatron.emit('build_succeeded', job_id, job['pull'], build['url']);
