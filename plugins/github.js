@@ -46,16 +46,18 @@ exports.init = function(config, mergeatron) {
 		processPull(pull);
 	});
 
-	mergeatron.on('build.started', function(job_id, pull_number, build_url) {
-		comment(pull_number, 'Testing Pull Request\nBuild: ' + build_url);
+	mergeatron.on('build.started', function(job_id, job, build_url) {
+		createStatus(job['head'], 'pending', build_url, 'Testing Pull Request');
 	});
 
-	mergeatron.on('build.failed', function(job_id, pull_number, build_url) {
-		comment(pull_number,  responses.failure.randomValue() + "\n" + build_url);
+	mergeatron.on('build.failed', function(job_id, job, build_url) {
+		comment(job['pull'],  responses.failure.randomValue() + "\n" + build_url);
+		createStatus(job['head'], 'failure', build_url, 'Build failed');
 	});
 
-	mergeatron.on('build.succeeded', function(job_id, pull_number, build_url) {
-		comment(pull_number, responses.success.randomValue());
+	mergeatron.on('build.succeeded', function(job_id, job, build_url) {
+		comment(job['pull'], responses.success.randomValue());
+		createStatus(job['head'], 'success', build_url, 'Build succeeded');
 	});
 
 	mergeatron.on('line.violation', function(job_id, pull_number, sha, file, position) {
@@ -127,5 +129,9 @@ exports.init = function(config, mergeatron) {
 
 	function comment(pull_number, comment) {
 		GitHub.issues.createComment({ user: config.user, repo: config.repo, number: pull_number, body: comment });
+	}
+
+	function createStatus(sha, state, build_url, description) {
+		GitHub.statuses.create({ user: config.user, repo: config.repo, sha: sha, state: state, target_url: build_url, description: description });
 	}
 };
