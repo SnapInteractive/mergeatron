@@ -23,13 +23,13 @@ exports.init = function(config, mergeatron) {
 		}
 	});
 
-	mergeatron.on('build_triggered', function(pull_number, sha, ssh_url, branch, updated_at, triggered_by) {
+	mergeatron.on('build.triggered', function(pull_number, sha, ssh_url, branch, updated_at, triggered_by) {
 		buildPull(pull_number, sha, ssh_url, branch, updated_at);
 	});
 
-	mergeatron.on('build_check_files', function(pull, files) {
+	mergeatron.on('build.check_files', function(pull, files) {
 		if (!config.rules) {
-			mergeatron.emit('build_process', pull);
+			mergeatron.emit('build.process', pull);
 			return;
 		}
 
@@ -40,7 +40,7 @@ exports.init = function(config, mergeatron) {
 
 			for (var y in config.rules) {
 				if (files[x].match(config.rules[y])) {
-					mergeatron.emit('build_process', pull);
+					mergeatron.emit('build.process', pull);
 					return;
 				}
 			}
@@ -103,16 +103,16 @@ exports.init = function(config, mergeatron) {
 						mergeatron.mongo.jobs.findOne({ _id: job_id }, function(error, job) {
 							if (job['status'] == 'new') {
 								mergeatron.mongo.jobs.update({ _id: job_id }, { $set: { status: 'started' } });
-								mergeatron.emit('build_started', job_id, job['pull'], build['url']);
+								mergeatron.emit('build.started', job_id, job['pull'], build['url']);
 							}
 
 							if (job['status'] != 'finished') {
 								if (build['result'] == 'FAILURE') {
 									mergeatron.mongo.jobs.update({ _id: job_id }, { $set: { status: 'finished' } });
-									mergeatron.emit('build_failed', job_id, job['pull'], build['url'] + 'console');
+									mergeatron.emit('build.failed', job_id, job['pull'], build['url'] + 'console');
 								} else if (build['result'] == 'SUCCESS') {
 									mergeatron.mongo.jobs.update({ _id: job_id }, { $set: { status: 'finished' } });
-									mergeatron.emit('build_succeeded', job_id, job['pull'], build['url']);
+									mergeatron.emit('build.succeeded', job_id, job['pull'], build['url']);
 								}
 							}
 						});
