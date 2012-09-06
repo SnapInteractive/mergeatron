@@ -1,25 +1,20 @@
-#Mergeatron
+# Mergeatron
 
 Mergeatron is a Node.js bot that monitors a GitHub account for new, and updated, Pull Requests. When it finds any it will kick off a Jenkins build and reply to the Pull Request with a thumbs up, or down, depending on success or failure.
 
 Mergeatron is intended to assist with reviewing Pull Requests by providing, at a glance, information on whether or not it passes your automated tests.
 
-##Requirements
+## Requirements
 
  * [MongoDB](http://www.mongodb.org/)
  * [Node.js](http://nodejs.org/)
  * [NPM](https://npmjs.org/)
 
-##Installation Instructions
+## Installation Instructions
 
 ```
 	git clone git@github.com:steves/mergeatron.git
-	npm install github
-	npm install mongodb
-	npm install mongojs
-	npm install request
-	npm install node-uuid
-	npm install async
+	npm install
 
 	// Copy config.sample.js to config.js and update accordingly
 	node mergeatron.js
@@ -71,6 +66,8 @@ git pull upstream master
 git checkout ${BRANCH_NAME}
 git merge master
 git clean -fdx
+
+git remote prune origin
 ```
 
  * Update the above shell script to have the proper references to your master branch. You'll need to manually ensure that `origin` and `upstream` are created.
