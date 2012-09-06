@@ -74,3 +74,24 @@ git clean -fdx
 ```
 
  * Update the above shell script to have the proper references to your master branch. You'll need to manually ensure that `origin` and `upstream` are created.
+ 
+ ## Extending Mergeatron
+ 
+ Mergeatron is built with extensibility in mind. To help achieve this it's been built around events instead of direct calls between plugins. This enables you to easily write any plugin you want that listens on the existing events and/or emits your own that others can use.
+ 
+ Any file found in your configured `plugins_dir` directory is assumed to be a plugin and will be loaded unless disabled via your `config.js` file. To turn off a plugin just provide an entry for it under the `plugins` config with `enabled: false`. The file will then not be included.
+ 
+ All plugins are expected to export an `init` function that is executed and passed two parameters. The first is your plugins config settings and the second is a `Mergeatron` object. The `Mergeatron` object contains a reference to mongo but, more importantly, is also an `EventEmitter`. You can bind your listeners to this object and use it to emit events.
+ 
+ Below is a very basic example:
+ 
+ ```javascript
+ exports.init = function(config, mergeatron) {
+ 	// Do some stuff we want to execute once on startup/init
+
+ 	mergeatron.on('build.started', function(job_id, job, build_url) {
+		console.log(job_id + ' has started building!');
+ 	});
+ }
+ 
+ ```
