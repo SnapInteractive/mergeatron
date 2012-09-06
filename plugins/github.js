@@ -1,7 +1,6 @@
 var GitHubApi = require('github'),
 	GitHub = new GitHubApi({ version: '3.0.0' }),
-	async = require('async'),
-	responses = require('./../responses').responses;
+	async = require('async');
 
 exports.init = function(config, mergeatron) {
 	GitHub.authenticate({
@@ -51,12 +50,10 @@ exports.init = function(config, mergeatron) {
 	});
 
 	mergeatron.on('build.failed', function(job_id, job, build_url) {
-		comment(job['pull'],  responses.failure.randomValue() + "\n" + build_url);
 		createStatus(job['head'], 'failure', build_url, 'Build failed');
 	});
 
 	mergeatron.on('build.succeeded', function(job_id, job, build_url) {
-		comment(job['pull'], responses.success.randomValue());
 		createStatus(job['head'], 'success', build_url, 'Build succeeded');
 	});
 
@@ -125,10 +122,6 @@ exports.init = function(config, mergeatron) {
 				}
 			});
 		});
-	}
-
-	function comment(pull_number, comment) {
-		GitHub.issues.createComment({ user: config.user, repo: config.repo, number: pull_number, body: comment });
 	}
 
 	function createStatus(sha, state, build_url, description) {
