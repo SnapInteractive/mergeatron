@@ -7,14 +7,14 @@ exports.init = function(config, mergeatron) {
 	async.parallel({
 		'jenkins': function() {
 			var run_jenkins = function() {
-				mergeatron.mongo.jobs.find({ status: { $ne: 'finished' } }).forEach(function(err, item) {
+				mergeatron.mongo.pulls.find({ 'jobs.status': { $in: ['new', 'started'] }}).forEach(function(err, pull) {
 					if (err) {
 						console.log(err);
 						process.exit(1);
 					}
 
-					if (!item) { return; }
-					checkJob(item['_id']);
+					if (!pull) { return; }
+					checkJob(pull);
 				});
 
 				setTimeout(run_jenkins, config.frequency);
@@ -24,31 +24,34 @@ exports.init = function(config, mergeatron) {
 		}
 	});
 
-	mergeatron.on('build.triggered', function(pull_number, sha, ssh_url, branch, updated_at, triggered_by) {
-		buildPull(pull_number, sha, ssh_url, branch, updated_at);
+	mergeatron.on('build_triggered', function(pull, pull_number, sha, ssh_url, branch, updated_at, triggered_by) {
+		buildPull(pull, pull_number, sha, ssh_url, branch, updated_at);
 	});
 
-	mergeatron.on('build.validate', function(pull, files) {
+	mergeatron.on('build.validate', function(pull) {
 		if (!config.rules) {
 			mergeatron.emit('build.process', pull);
 			return;
 		}
 
-		for (var x in files) {
-			if (!files[x] || typeof files[x] != 'string') {
+		for (var x in pull.files) {
+			if (!pull.files[x].filename || typeof pull.files[x].filename != 'string') {
 				continue;
 			}
 
 			for (var y in config.rules) {
-				if (files[x].match(config.rules[y])) {
-					mergeatron.emit('build.process', pull);
+				if (pull.files[x].filename.match(config.rules[y])) {
+					mergeatron.emit('build_process', pull);
 					return;
 				}
 			}
 		}
 	});
 
-	function buildPull(number, sha, ssh_url, branch, updated_at) {
+	/**
+	 * @todo Do we need to pass all these parameters, is just passing pull enough?
+	 */
+	function buildPull(pull, number, sha, ssh_url, branch, updated_at) {
 		var job_id = uuid.v1(),
 			options = {
 			url: url.format({
@@ -73,25 +76,33 @@ exports.init = function(config, mergeatron) {
 				return;
 			}
 
-			mergeatron.mongo.pulls.update({ _id: number }, { $set: { head: sha, updated_at: updated_at } });
-			mergeatron.mongo.jobs.insert({ _id: job_id, pull: number, status: 'new', head: sha });
+			if (typeof pull.jobs == 'undefined') {
+				pull.jobs = [];
+			}
 
-			checkJob(job_id);
+			pull.jobs.push({
+				id: job_id,
+				status: 'new',
+				head: sha
+			});
+
+			mergeatron.mongo.pulls.update({ _id: number }, { $set: { head: sha, updated_at: updated_at, jobs: pull.jobs } });
 		});
 	}
 
-	function checkJob(job_id) {
-		var options = {
-			url: url.format({
-				protocol: config.protocol,
-				host: config.host,
-				pathname: '/job/' + config.project + '/api/json',
-				query: {
-					tree: 'builds[number,url,actions[parameters[name,value]],building,result]'
-				},
-			}),
-			json: true
-		};
+	function checkJob(pull) {
+		var job = findUnfinishedJob(pull),
+			options = {
+				url: url.format({
+					protocol: config.protocol,
+					host: config.host,
+					pathname: '/job/' + config.project + '/api/json',
+					query: {
+						tree: 'builds[number,url,actions[parameters[name,value]],building,result]'
+					},
+				}),
+				json: true
+			};
 
 		request(options, function(error, response) {
 			response.body.builds.forEach(function(build) {
@@ -100,34 +111,32 @@ exports.init = function(config, mergeatron) {
 				}
 
 				build.actions[0].parameters.forEach(function(param) {
-					if (param['name'] == 'JOB' && param['value'] == job_id) {
-						mergeatron.mongo.jobs.findOne({ _id: job_id }, function(error, job) {
-							if (job['status'] == 'new') {
-								mergeatron.mongo.jobs.update({ _id: job_id }, { $set: { status: 'started' } });
-								mergeatron.emit('build.started', job_id, job, build['url']);
+					if (param['name'] == 'JOB' && param['value'] == job.id) {
+						if (job.status == 'new') {
+							mergeatron.mongo.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'started' } });
+							mergeatron.emit('build.started', job, pull, build['url']);
+						}
+
+						if (job.status != 'finished') {
+							if (build['result'] == 'FAILURE') {
+								mergeatron.mongo.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'finished' } });
+								mergeatron.emit('build_failed', job, pull, build['url'] + 'console');
+
+								processArtifacts(build, pull);
+							} else if (build['result'] == 'SUCCESS') {
+								mergeatron.mongo.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'finished' } });
+								mergeatron.emit('build_succeeded', job, pull, build['url']);
+
+								processArtifacts(build, pull);
 							}
-
-							if (job['status'] != 'finished') {
-								if (build['result'] == 'FAILURE') {
-									mergeatron.mongo.jobs.update({ _id: job_id }, { $set: { status: 'finished' } });
-									mergeatron.emit('build_failed', job_id, job['pull'], build['url'] + 'console');
-
-									processArtifacts(build, job);
-								} else if (build['result'] == 'SUCCESS') {
-									mergeatron.mongo.jobs.update({ _id: job_id }, { $set: { status: 'finished' } });
-									mergeatron.emit('build_succeeded', job_id, job['pull'], build['url']);
-
-									processArtifacts(build, job);
-								}
-							}
-						});
+						}
 					}
 				});
 			});
 		});
 	}
 
-	function processArtifacts(build, job) {
+	function processArtifacts(build, pull) {
 		var options = {
 			url: url.format({
 				protocol: config.protocol,
@@ -149,8 +158,16 @@ exports.init = function(config, mergeatron) {
 			var artifacts = response.body.artifacts;
 			for (var i in artifacts) {
 				artifacts[i]['url'] = build['url'] + 'artifact/' + artifacts[i]['relative_url'];
-				mergeatron.emit('artifact_found', build, job, artifacts[i]);
+				mergeatron.emit('artifact_found', build, pull, artifacts[i]);
 			}
 		});
+	}
+
+	function findUnfinishedJob(pull) {
+		for (var x in pull.jobs) {
+			if (pull.jobs[x].status != 'finished') {
+				return pull.jobs[x];
+			}
+		}
 	}
 };
