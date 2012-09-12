@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Mergeatron by SnapInteractive</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Mergeatron</h1>
+        <p>A Node.JS bot that automatically runs builds for new, and updated, Pull Requests.</p>
+        <p class="view"><a href="https://github.com/SnapInteractive/mergeatron">View the Project on GitHub <small>SnapInteractive/mergeatron</small></a></p>
+        <ul>
+          <li><a href="https://github.com/SnapInteractive/mergeatron/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/SnapInteractive/mergeatron/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/SnapInteractive/mergeatron">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>Mergeatron</h1>
+
+<p>Mergeatron is a Node.js bot that monitors a GitHub account for new, and updated, Pull Requests. When it finds any it will kick off a Jenkins build and reply to the Pull Request with a thumbs up, or down, depending on success or failure.</p>
+
+<p>Mergeatron is intended to assist with reviewing Pull Requests by providing, at a glance, information on whether or not it passes your automated tests.</p>
+
+<h2>Requirements</h2>
+
+<ul>
+<li><a href="http://www.mongodb.org/">MongoDB</a></li>
+<li><a href="http://nodejs.org/">Node.js</a></li>
+<li><a href="https://npmjs.org/">NPM</a></li>
+</ul><h2>Installation Instructions</h2>
+
+<pre><code>    git clone git@github.com:steves/mergeatron.git
+    npm install
+
+    // Copy config.sample.js to config.js and update accordingly
+    node mergeatron.js
+</code></pre>
+
+<h2>Configuring Mergeatron</h2>
+
+<p>To configure Mergeatron copy the <code>config.sample.js</code> file to <code>config.js</code> in the same directory. The settings you will need to change are:</p>
+
+<ul>
+<li>
+<code>mongo</code> - This is the connection string to use for mongo. For more information on this see the <a href="https://github.com/gett/mongojs">mongojs</a> documentation.</li>
+<li>
+<code>plugins_dir</code> - This is the directory where the plugins live. Chances are you won't need to change this.</li>
+</ul><p>Mergeatron comes with multiple different plugins you can opt to use. By default any plugin found in your <code>config.js</code> will be included and run. If you want to disable a certain plugin you can either remove it or add <code>enabled: false</code> to that plugins configuration.</p>
+
+<ul>
+<li>
+<code>jenkins.token</code> - This is a token you setup with your project. In your job configuration, within Jenkins, look for the option labeled 'Trigger builds remotely (e.g., from scripts)'.</li>
+<li>
+<code>jenkins.protocol</code> - Either <code>http</code> or <code>https</code> depending on your setup.</li>
+<li>`jenkins.host - The host of the URL, without backslash, to your Jenkins install.</li>
+<li>
+<code>jenkins.project</code> - The name of the project within Jenkins you want to build.</li>
+<li>
+<code>jenkins.rules</code> - An array of regular expressions that will be run against each file name in the pull request. A jenkins build will only be triggered if at least one file matches at least one rule.</li>
+<li>
+<code>jenkins.frequency</code> - The frequency, in milliseconds, to poll Jenkins for updated build information. Increasing this will increase the time between when a build is started and Mergeatron knows it finished. Decreasing it too low can cause your Jenkins server to come under heavy load.</li>
+<li>
+<code>github.auth.user</code> - The username of the GitHub user Mergeatron will be logging in, and posting, as. This user must have visibility to your repos Pull Requests.</li>
+<li>
+<code>github.auth.pass</code> - The password for the GitHub user Mergeatron will be using.</li>
+<li>
+<code>github.user</code> - The user whose GitHub repo Mergeatron will be checking for Pull Requests. Does not need to be the same as the <code>github.auth.user</code> user.</li>
+<li>
+<code>github.repo</code> - The repo you want Mergeatron to keep an eye on.</li>
+<li>
+<code>github.frequency</code> - The frequency, in milliseconds, with which to poll GitHub for new and updated Pull Requests. Be mindful of your <a href="http://developer.github.com/v3/#rate-limiting">API rate limit</a> when setting this.</li>
+</ul><h2>Configuring Jenkins</h2>
+
+<p>To configure Jenkins you will need to make sure you have the appropriate git plugin installed. I'm assuming you already know how to do that and already have it up and running successfully. Once you do follow the below steps.</p>
+
+<ul>
+<li>Check the box labeled 'This build is parameterized' and create the following string parameters:
+
+<ul>
+<li>REPOSITORY_URL - SSH Url to the git repo (default: <a href="mailto:git@github.com">git@github.com</a>:<code>github.user/</code>github.repo`.git)</li>
+<li>BRANCH_NAME - The name of the branch to use (default: origin/master)</li>
+<li>JOB - The unique ID of each job. Jenkins doesn't return their ID so we have to use this to search for the job later</li>
+<li>PULL - The id of the pull request</li>
+</ul>
+</li>
+<li>Check the box labeled 'Execute concurrent builds if necessary'.</li>
+<li>Check the box labeled 'Trigger builds remotely (e.g., from scripts)' and enter the <code>jenkins.token</code> token you specified in your Mergeatron configs.</li>
+<li>Provide the following shell script as a build step:</li>
+</ul><div class="highlight"><pre>git reset --hard HEAD
+
+git remote <span class="nb">set</span>-url origin <span class="k">${</span><span class="nv">REPOSITORY_URL</span><span class="k">}</span>
+git fetch origin
+
+git checkout master
+git pull upstream master
+
+git checkout <span class="k">${</span><span class="nv">BRANCH_NAME</span><span class="k">}</span>
+git merge master
+git clean -fdx
+
+git remote prune origin
+</pre></div>
+
+<ul>
+<li>
+<p>Update the above shell script to have the proper references to your master branch. You'll need to manually ensure that <code>origin</code> and <code>upstream</code> are created.</p>
+
+<h2>Extending Mergeatron</h2>
+
+<p>Mergeatron is built with extensibility in mind. To help achieve this it's been built around events instead of direct calls between plugins. This enables you to easily write any plugin you want that listens on the existing events and/or emits your own that others can use.</p>
+
+<p>Any file found in your configured <code>plugins_dir</code> directory is assumed to be a plugin and will be loaded unless disabled via your <code>config.js</code> file. To turn off a plugin just provide an entry for it under the <code>plugins</code> config with <code>enabled: false</code>. The file will then not be included.</p>
+
+<p>All plugins are expected to export an <code>init</code> function that is executed and passed two parameters. The first is your plugins config settings and the second is a <code>Mergeatron</code> object. The <code>Mergeatron</code> object contains a reference to mongo but, more importantly, is also an <code>EventEmitter</code>. You can bind your listeners to this object and use it to emit events.</p>
+
+<p>Below is a very basic example:</p>
+
+<div class="highlight"><pre><span class="nx">exports</span><span class="p">.</span><span class="nx">init</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">config</span><span class="p">,</span> <span class="nx">mergeatron</span><span class="p">)</span> <span class="p">{</span>
+   <span class="c1">// Do some stuff we want to execute once on startup/init</span>
+
+   <span class="nx">mergeatron</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'build.started'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">job_id</span><span class="p">,</span> <span class="nx">job</span><span class="p">,</span> <span class="nx">build_url</span><span class="p">)</span> <span class="p">{</span>
+       <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">job_id</span> <span class="o">+</span> <span class="s1">' has started building!'</span><span class="p">);</span>
+   <span class="p">});</span>
+<span class="p">}</span>
+
+</pre></div>
+</li>
+</ul>
+      </section>
+    </div>
+    <footer>
+      <p>Project maintained by <a href="https://github.com/SnapInteractive">SnapInteractive</a></p>
+      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
+    </footer>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
