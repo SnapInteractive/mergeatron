@@ -6,12 +6,12 @@
 
 	"licenses": [{
 		"type": "MIT",
-		"url": "http://github.com/steves/mergeatron/raw/master/LICENSE"
+		"url": "http://github.com/SnapInteractive/mergeatron/raw/master/LICENSE"
 	}],
 
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/steves/mergeatron"
+		"url": "https://github.com/SnapInteractive/mergeatron"
 	},
 
 	"dependencies": {
