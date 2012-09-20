@@ -89,6 +89,14 @@ git remote prune origin
  	mergeatron.on('build.started', function(job_id, job, build_url) {
 		console.log(job_id + ' has started building!');
  	});
- }
- 
+ } 
  ```
+
+ ## Events
+
+ * ''build.check_files'' - This is the first event emitted in a builds life cycle. It allows any listening plugins to check the list of files being modified to make sure the build should be handled.
+ * ''build.process'' - If a build should be acted upon this event will be emitted. It allows any listening plugins to setup the build for processing. This means persisting it to a temporary, or permenant, data store of their choice and doing any other setup work they need to.
+ * ''build.triggered'' - Once a build has been pre-processed it is ready to be built. When that happens this event is emitted. Any listening plugins can start the build.
+ * ''build.started'' - This event is emitted when the build has been started.
+ * ''build.succeeded'' - This event is emitted when a build was successful.
+ * ''build.failed'' - This event is emitted when a build has failed.
