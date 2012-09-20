@@ -87,7 +87,7 @@ exports.init = function(config, mergeatron) {
 			}
 
 			if (file_names.length > 0) {
-				mergeatron.emit('build.check_files', pull, file_names);
+				mergeatron.emit('build.validate', pull, file_names);
 			}
 		});
 	}

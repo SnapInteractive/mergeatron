@@ -27,7 +27,7 @@ exports.init = function(config, mergeatron) {
 		buildPull(pull_number, sha, ssh_url, branch, updated_at);
 	});
 
-	mergeatron.on('build.check_files', function(pull, files) {
+	mergeatron.on('build.validate', function(pull, files) {
 		if (!config.rules) {
 			mergeatron.emit('build.process', pull);
 			return;
