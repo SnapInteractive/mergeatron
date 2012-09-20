@@ -1,7 +1,7 @@
 // Rename, or copy, to config.js in the same directory
 exports.config = {
 	mongo: 'mergeatron',
-	plugins_dir: './plugins/',
+	plugin_dirs: [ './plugins/' ],
 	plugins: {
 		github: {
 			auth: {
