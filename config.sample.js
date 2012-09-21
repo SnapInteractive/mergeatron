@@ -19,6 +19,9 @@ exports.config = {
 			project: 'project_name',
 			rules: [ new RegExp(/.php/g) ],
 			frequency: 2000
+		},
+		phpcs: {
+			artifact: 'artifacts/phpcs.csv'
 		}
 	}
 };
