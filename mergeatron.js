@@ -3,10 +3,6 @@ var config = require('./config').config,
 	fs = require('fs'),
 	events = require('events');
 
-Array.prototype.randomValue = function() {
-	return this[Math.floor(Math.random() * this.length)];
-};
-
 var Mergeatron = function(mongo) {
 	this.mongo = mongo;
 };

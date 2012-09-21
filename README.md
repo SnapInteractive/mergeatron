@@ -40,7 +40,8 @@ Mergeatron comes with multiple different plugins you can opt to use. By default 
  * `github.user` - The user whose GitHub repo Mergeatron will be checking for Pull Requests. Does not need to be the same as the `github.auth.user` user.
  * `github.repo` - The repo you want Mergeatron to keep an eye on.
  * `github.frequency` - The frequency, in milliseconds, with which to poll GitHub for new and updated Pull Requests. Be mindful of your [API rate limit](http://developer.github.com/v3/#rate-limiting) when setting this.
- 
+ * `phpcs.artifact` - The name of the artifact file that contains PHP Code Sniffer results. If no artifact with this name is found the plugin won't do anything.
+
 ## Configuring Jenkins
 
 To configure Jenkins you will need to make sure you have the appropriate git plugin installed. I'm assuming you already know how to do that and already have it up and running successfully. Once you do follow the below steps.
@@ -94,9 +95,11 @@ git remote prune origin
 
  ## Events
 
- * ''build.validate'' - This is the first event emitted in a builds life cycle. It allows any listening plugins to check the build to make sure it should be handled.
- * ''build.process'' - If a build should be acted upon this event will be emitted. It allows any listening plugins to setup the build for processing. This means persisting it to a temporary, or permenant, data store of their choice and doing any other setup work they need to.
- * ''build.triggered'' - Once a build has been pre-processed it is ready to be built. When that happens this event is emitted. Any listening plugins can start the build.
+ * ''pull.found'' - This is the first event emitted in a builds life cycle. It allows any listening plugins to check the build to make sure it should be handled.
+ * ''pull.validated'' - If a build should be acted upon this event will be emitted. It allows any listening plugins to setup the build for processing. This means persisting it to a temporary, or permenant, data store of their choice and doing any other setup work they need to.
+ * ''pull.processed'' - Once a build has been pre-processed it is ready to be built. When that happens this event is emitted. Any listening plugins can start the build.
  * ''build.started'' - This event is emitted when the build has been started.
  * ''build.succeeded'' - This event is emitted when a build was successful.
  * ''build.failed'' - This event is emitted when a build has failed.
+ * ''pull.inline_status'' - This event is emitted when a plugin is announcing that something was found on a specific line of a files diff within the build.
+ * ''build.artifact_found'' - This event is emitted once for each artifact found after the build has finished. Plugins receive the URL to the artifact and can download and act upon it if wanted.
