@@ -41,7 +41,7 @@ exports.init = function(config, mergeatron) {
 		}
 	});
 
-	mergeatron.on('build.process', function(pull) {
+	mergeatron.on('pull.validated', function(pull) {
 		processPull(pull);
 	});
 
@@ -125,7 +125,7 @@ exports.init = function(config, mergeatron) {
 			});
 
 			if (pull.files.length > 0) {
-				mergeatron.emit('build.validate', pull);
+				mergeatron.emit('pull.found', pull);
 			}
 		});
 	}
@@ -159,14 +159,14 @@ exports.init = function(config, mergeatron) {
 			}
 
 			if (new_pull || pull.head.sha != item.head) {
-				mergeatron.emit('build.triggered', pull, pull.number, pull.head.sha, ssh_url, branch, pull.updated_at);
+				mergeatron.emit('pull.processed', pull, pull.number, pull.head.sha, ssh_url, branch, pull.updated_at);
 				return;
 			}
 
 			GitHub.issues.getComments({ user: config.user, repo: config.repo, number: pull.number, per_page: 100 }, function(error, resp) {
 				for (i in resp) {
 					if (resp[i].created_at > item.updated_at && resp[i].body.indexOf('@' + config.auth.user + ' retest') != -1) {
-						mergeatron.emit('build.triggered', pull, pull.number, pull.head.sha, ssh_url, branch, pull.updated_at, resp[i].user.login);
+						mergeatron.emit('pull.processed', pull, pull.number, pull.head.sha, ssh_url, branch, pull.updated_at, resp[i].user.login);
 						return;
 					}
 				}

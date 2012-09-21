@@ -24,13 +24,13 @@ exports.init = function(config, mergeatron) {
 		}
 	});
 
-	mergeatron.on('build.triggered', function(pull, pull_number, sha, ssh_url, branch, updated_at, triggered_by) {
+	mergeatron.on('pull.processed', function(pull, pull_number, sha, ssh_url, branch, updated_at, triggered_by) {
 		buildPull(pull, pull_number, sha, ssh_url, branch, updated_at);
 	});
 
-	mergeatron.on('build.validate', function(pull) {
+	mergeatron.on('pull.found', function(pull) {
 		if (!config.rules) {
-			mergeatron.emit('build.process', pull);
+			mergeatron.emit('pull.validated', pull);
 			return;
 		}
 
@@ -41,7 +41,7 @@ exports.init = function(config, mergeatron) {
 
 			for (var y in config.rules) {
 				if (pull.files[x].filename.match(config.rules[y])) {
-					mergeatron.emit('build.process', pull);
+					mergeatron.emit('pull.validated', pull);
 					return;
 				}
 			}
@@ -158,7 +158,7 @@ exports.init = function(config, mergeatron) {
 			var artifacts = response.body.artifacts;
 			for (var i in artifacts) {
 				artifacts[i]['url'] = build['url'] + 'artifact/' + artifacts[i]['relativePath'];
-				mergeatron.emit('artifact.found', build, pull, artifacts[i]);
+				mergeatron.emit('build.artifact_found', build, pull, artifacts[i]);
 			}
 		});
 	}

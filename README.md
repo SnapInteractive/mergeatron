@@ -95,10 +95,11 @@ git remote prune origin
 
  ## Events
 
- * ''build.validate'' - This is the first event emitted in a builds life cycle. It allows any listening plugins to check the build to make sure it should be handled.
- * ''build.process'' - If a build should be acted upon this event will be emitted. It allows any listening plugins to setup the build for processing. This means persisting it to a temporary, or permenant, data store of their choice and doing any other setup work they need to.
- * ''build.triggered'' - Once a build has been pre-processed it is ready to be built. When that happens this event is emitted. Any listening plugins can start the build.
+ * ''pull.found'' - This is the first event emitted in a builds life cycle. It allows any listening plugins to check the build to make sure it should be handled.
+ * ''pull.validated'' - If a build should be acted upon this event will be emitted. It allows any listening plugins to setup the build for processing. This means persisting it to a temporary, or permenant, data store of their choice and doing any other setup work they need to.
+ * ''pull.processed'' - Once a build has been pre-processed it is ready to be built. When that happens this event is emitted. Any listening plugins can start the build.
  * ''build.started'' - This event is emitted when the build has been started.
  * ''build.succeeded'' - This event is emitted when a build was successful.
  * ''build.failed'' - This event is emitted when a build has failed.
- * ''build.inline_status'' - Tis event is emitted when a plugin is announcing that something was found on a specific line of a files diff within the build.
+ * ''pull.inline_status'' - This event is emitted when a plugin is announcing that something was found on a specific line of a files diff within the build.
+ * ''build.artifact_found'' - This event is emitted once for each artifact found after the build has finished. Plugins receive the URL to the artifact and can download and act upon it if wanted.

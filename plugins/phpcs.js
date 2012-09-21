@@ -1,7 +1,7 @@
 var request = require('request');
 
 exports.init = function(config, mergeatron) {
-	mergeatron.on('artifact.found', function (build, pull, artifact) {
+	mergeatron.on('build.artifact_found', function (build, pull, artifact) {
 		if (artifact['relativePath'] == config.artifact) {
 			process(build, pull, artifact['url']);
 		}
