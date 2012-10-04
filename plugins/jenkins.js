@@ -91,7 +91,7 @@ exports.init = function(config, mergeatron) {
 	}
 
 	function checkJob(pull) {
-		var job = findUnfinishedJob(pull),
+		var jobs = findUnfinishedJobs(pull),
 			options = {
 				url: url.format({
 					protocol: config.protocol,
@@ -103,34 +103,39 @@ exports.init = function(config, mergeatron) {
 				}),
 				json: true
 			};
+		console.dir(jobs);
 
 		request(options, function(error, response) {
-			response.body.builds.forEach(function(build) {
-				if (typeof build.actions == 'undefined' || typeof build.actions[0].parameters == 'undefined' || !build.actions[0].parameters) {
-					return;
-				}
+			var builds = response.body.builds.filter(function(build) {
+				return typeof build.actions != 'undefined' &&
+				       typeof build.actions[0].parameters != 'undefined' &&
+				       build.actions[0].parameters;
+			});
 
-				build.actions[0].parameters.forEach(function(param) {
-					if (param['name'] == 'JOB' && param['value'] == job.id) {
-						if (job.status == 'new') {
-							mergeatron.mongo.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'started' } });
-							mergeatron.emit('build.started', job, pull, build['url']);
-						}
+			jobs.forEach(function(job) {
+				builds.forEach(function(build) {
+					build.actions[0].parameters.forEach(function(param) {
+						if (param['name'] == 'JOB' && param['value'] == job.id) {
+							if (job.status == 'new') {
+								mergeatron.mongo.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'started' } });
+								mergeatron.emit('build.started', job, pull, build['url']);
+							}
 
-						if (job.status != 'finished') {
-							if (build['result'] == 'FAILURE') {
-								mergeatron.mongo.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'finished' } });
-								mergeatron.emit('build.failed', job, pull, build['url'] + 'console');
+							if (job.status != 'finished') {
+								if (build['result'] == 'FAILURE') {
+									mergeatron.mongo.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'finished' } });
+									mergeatron.emit('build.failed', job, pull, build['url'] + 'console');
 
-								processArtifacts(build, pull);
-							} else if (build['result'] == 'SUCCESS') {
-								mergeatron.mongo.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'finished' } });
-								mergeatron.emit('build.succeeded', job, pull, build['url']);
+									processArtifacts(build, pull);
+								} else if (build['result'] == 'SUCCESS') {
+									mergeatron.mongo.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'finished' } });
+									mergeatron.emit('build.succeeded', job, pull, build['url']);
 
-								processArtifacts(build, pull);
+									processArtifacts(build, pull);
+								}
 							}
 						}
-					}
+					});
 				});
 			});
 		});
@@ -163,11 +168,9 @@ exports.init = function(config, mergeatron) {
 		});
 	}
 
-	function findUnfinishedJob(pull) {
-		for (var x in pull.jobs) {
-			if (pull.jobs[x].status != 'finished') {
-				return pull.jobs[x];
-			}
-		}
+	function findUnfinishedJobs(pull) {
+		return pull.jobs.filter(function(job) {
+			return job.status != 'finished';
+		});
 	}
 };
