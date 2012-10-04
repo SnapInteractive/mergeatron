@@ -22,6 +22,10 @@ config.plugin_dirs.forEach(function(dir) {
 				pluginName = files[i].split('.', 2)[0],
 				conf = { enabled: true };
 
+			if (!filename.match(/\.js$/)) {
+				break;
+			}
+
 			console.log('Loading plugin: ' + pluginName);
 
 			if (config.plugins && config.plugins[pluginName]) {
