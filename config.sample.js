@@ -10,7 +10,8 @@ exports.config = {
 			},
 			user: 'user-to-watch',
 			repo: 'repo_name',
-			frequency: 15000
+			frequency: 15000,
+			skip_file_listing: false
 		},
 		jenkins:  {
 			token: 'token',

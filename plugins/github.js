@@ -30,7 +30,12 @@ exports.init = function(config, mergeatron) {
 							continue;
 						}
 
-						checkFiles(pull);
+						if (config.skip_file_listing) {
+							pull.files = [];
+							mergeatron.emit('pull.found', pull);
+						} else {
+							checkFiles(pull);
+						}
 					}
 				});
 
