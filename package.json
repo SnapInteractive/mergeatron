@@ -1,13 +1,16 @@
 {
 	"name": "Mergeatron",
 	"version": "0.1.2",
-	"author": "Steven Surowiec<steven.surowiec@gmail.com>",
+	"author": "SNAP Interactive, Inc.",
+	"contributors": [
+        "Steven Surowiec <steven.surowiec@gmail.com>"
+    ],
 	"description": "A helpful PR monitor that runs jenkins builds when Pull Requests are created and updated",
 
 	"licenses": [{
-		"type": "MIT",
-		"url": "http://github.com/SnapInteractive/mergeatron/raw/master/LICENSE"
-	}],
+        "type": "Apache-2.0"
+      , "url": "http://www.apache.org/licenses/LICENSE-2.0"
+    }],
 
 	"repository": {
 		"type": "git",
