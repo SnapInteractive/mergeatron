@@ -4,14 +4,16 @@ exports.config = {
 	plugin_dirs: [ './plugins/' ],
 	plugins: {
 		github: {
+			method: 'hooks',    // 'hooks' for webhooks or 'polling' to poll the REST api
 			auth: {
 				user: 'username',
 				pass: 'password'
 			},
 			user: 'user-to-watch',
 			repo: 'repo_name',
-			frequency: 15000,
-			skip_file_listing: false
+			skip_file_listing: false,
+			frequency: 15000,    // only necessary if method is 'polling'
+			port: '8888'         // only necessary if method is 'hooks'
 		},
 		jenkins:  {
 			token: 'token',
