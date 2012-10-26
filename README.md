@@ -35,12 +35,24 @@ Mergeatron comes with multiple different plugins you can opt to use. By default 
  * `jenkins.project` - The name of the project within Jenkins you want to build.
  * `jenkins.rules` - An array of regular expressions that will be run against each file name in the pull request. A jenkins build will only be triggered if at least one file matches at least one rule.
  * `jenkins.frequency` - The frequency, in milliseconds, to poll Jenkins for updated build information. Increasing this will increase the time between when a build is started and Mergeatron knows it finished. Decreasing it too low can cause your Jenkins server to come under heavy load.
+ * `github.method` - Either "hooks" or "polling". If "hooks" you'll need to configure the `github.port` option and make sure this port is available to GitHub to post to. If "polling" you'll need to configure `github.frequency` for how often to poll their REST API.
  * `github.auth.user` - The username of the GitHub user Mergeatron will be logging in, and posting, as. This user must have visibility to your repos Pull Requests.
  * `github.auth.pass` - The password for the GitHub user Mergeatron will be using.
  * `github.user` - The user whose GitHub repo Mergeatron will be checking for Pull Requests. Does not need to be the same as the `github.auth.user` user.
  * `github.repo` - The repo you want Mergeatron to keep an eye on.
  * `github.frequency` - The frequency, in milliseconds, with which to poll GitHub for new and updated Pull Requests. Be mindful of your [API rate limit](http://developer.github.com/v3/#rate-limiting) when setting this.
+ * `github.port` - The port you want to allow GitHub to post to.
  * `phpcs.artifact` - The name of the artifact file that contains PHP Code Sniffer results. If no artifact with this name is found the plugin won't do anything.
+
+## Setting Up GitHub
+
+There are two ways you can use the GitHub plugin. You can either have it poll GitHub's REST API periodically looking for changes. The downside to this approach is that it's very inefficienct, especially if you have a low volume of Pull Requests or if pull requests can sit for a while before being merged or closed. You also run into issues with rate limiting if you have too much activity or poll too frequently.
+
+Alternatively you can use GitHub's webhooks and let them push new and updated pull requests to you. This is far more efficient but does mean you have to open a port for them to connect to. They provide the list of public IPs they post from so you can lock down the port for increased security.
+
+To configure your setup for polling you need to set `github.method` to "polling" and will want to tweak the `github.frequency` setting to match how often you want to poll their API. Keep in mind they do have rate limiting so don't make it too frequent. The default here, or higher, should be pefectly fine.
+
+To configure your setup for webhooks you need to set `github.method` to "hooks" and set `github.port` to the port number you're opening for them. You'll also need to setup he webhook with GitHub. You can execute `nodejs bin/github_setup.js` and provide the details it asks for to set one you. You'll want to read [their documentation](http://developer.github.com/v3/repos/hooks/) for more information on webhooks.
 
 ## Configuring Jenkins
 

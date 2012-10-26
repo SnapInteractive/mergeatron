@@ -1,6 +1,14 @@
-var GitHubApi = require('github'),
-	GitHub = new GitHubApi({ version: '3.0.0' }),
-	async = require('async');
+var http = require('http'),
+	async = require('async'),
+	emitter = require('events').EventEmitter,
+	events = new emitter(),
+	GitHubApi = require('github'),
+	GitHub = new GitHubApi({ version: '3.0.0' });
+
+// We only want to accept local requests and GitHub requests. See the Service Hooks
+// page of any repo you have admin access to to see the list of GitHub public IPs.
+var allowed_ips = [ '127.0.0.1', '207.97.227.253', '50.57.128.197', '108.171.174.178' ],
+	allowed_events = [ 'pull_request', 'issue_comment' ];
 
 exports.init = function(config, mergeatron) {
 	GitHub.authenticate({
@@ -9,42 +17,11 @@ exports.init = function(config, mergeatron) {
 		password: config.auth.pass
 	});
 
-	async.parallel({
-		'github': function() {
-			var run_github = function() {
-				GitHub.pullRequests.getAll({ 'user': config.user, 'repo': config.repo, 'state': 'open' }, function(error, resp) {
-					if (error) {
-						console.log(error);
-						return;
-					}
-
-					for (i in resp) {
-						var pull = resp[i],
-							number = pull.number;
-
-						if (!number || number == 'undefined') {
-							continue;
-						}
-
-						if (pull.body && pull.body.indexOf('@' + config.auth.user + ' ignore') != -1) {
-							continue;
-						}
-
-						if (config.skip_file_listing) {
-							pull.files = [];
-							mergeatron.emit('pull.found', pull);
-						} else {
-							checkFiles(pull);
-						}
-					}
-				});
-
-				setTimeout(run_github, config.frequency);
-			};
-
-			run_github();
-		}
-	});
+	if (config.method == 'hooks') {
+		setupServer();
+	} else {
+		setupPolling();
+	}
 
 	mergeatron.on('pull.validated', function(pull) {
 		processPull(pull);
@@ -72,6 +49,42 @@ exports.init = function(config, mergeatron) {
 			path: file,
 			position: position
 		});
+	});
+
+	events.on('pull_request', function(pull) {
+		if (pull.action != 'synchronize' && pull.action != 'opened') {
+			return;
+		}
+
+		if (pull.body && pull.body.indexOf('@' + config.user + ' ignore') != -1) {
+			return;
+		}
+
+		if (config.skip_file_listing) {
+			pull.files = [];
+			mergeatron.emit('pull.found', pull);
+		} else {
+			checkFiles(pull);
+		}
+	});
+
+	events.on('issue_comment', function(data) {
+		// This event will pick up comments on issues and pull requests but we only care about pull requests
+		if (data.issue.pull_request.html_url == null) {
+			return;
+		}
+
+		if (data.comment.body.indexOf('@' + config.auth.user + ' retest') == -1) {
+			GitHub.pullRequests.get({ 'user': config.user, 'repo': config.repo, 'number': data.issue.number }, function(error, pull) {
+				if (error) {
+					console.log(error);
+					return;
+				}
+
+				pull.skip_comments = true;
+				events.emit('pull_request', pull);
+			});
+		}
 	});
 
 	function checkFiles(pull) {
@@ -168,6 +181,11 @@ exports.init = function(config, mergeatron) {
 				return;
 			}
 
+			if (typeof pull.skip_comments != 'undefined' && pull.skip_comments) {
+				mergeatron.emit('pull.processed', pull, pull.number, pull.head.sha, ssh_url, branch, pull.updated_at, resp[i].user.login);
+				return;
+			}
+
 			GitHub.issues.getComments({ user: config.user, repo: config.repo, number: pull.number, per_page: 100 }, function(error, resp) {
 				for (i in resp) {
 					if (resp[i].created_at > item.updated_at && resp[i].body.indexOf('@' + config.auth.user + ' retest') != -1) {
@@ -181,5 +199,64 @@ exports.init = function(config, mergeatron) {
 
 	function createStatus(sha, state, build_url, description) {
 		GitHub.statuses.create({ user: config.user, repo: config.repo, sha: sha, state: state, target_url: build_url, description: description });
+	}
+
+	function setupServer() {
+		http.createServer(function(request, response) {
+			if (allowed_ips.indexOf(request.connection.remoteAddress) == -1) {
+				response.writeHead(403, { 'Content-Type': 'text/plain' });
+				response.end();
+				return;
+			}
+
+			if (typeof request.headers['x-github-event'] == 'undefined' || allowed_events.indexOf(request.headers['x-github-event']) == -1) {
+				response.writeHead(501, { 'Content-Type': 'text/plain' });
+				response.write('Unsupported event type');
+				response.end();
+				return;
+			}
+
+			var data = '';
+			request.on('data', function(chunk) {
+				data += chunk.toString();
+			});
+
+			request.on('end', function() {
+				events.emit(request.headers['x-github-event'], JSON.parse(data));
+			});
+
+			response.writeHead(200, { "Content-Type": "text/plain" });
+			response.end();
+		}).listen(config.port);
+	}
+
+	function setupPolling() {
+		async.parallel({
+			'github': function() {
+				var run_github = function() {
+					GitHub.pullRequests.getAll({ 'user': config.user, 'repo': config.repo, 'state': 'open' }, function(error, resp) {
+						if (error) {
+							console.log(error);
+							return;
+						}
+
+						for (i in resp) {
+							var pull = resp[i],
+								number = pull.number;
+
+							if (!number || number == 'undefined') {
+								continue;
+							}
+
+							events.emit('pull_request', pull);
+						}
+					});
+
+					setTimeout(run_github, config.frequency);
+				};
+
+				run_github();
+			}
+		});
 	}
 };
