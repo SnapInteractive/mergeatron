@@ -52,7 +52,7 @@ exports.init = function(config, mergeatron) {
 	});
 
 	events.on('pull_request', function(pull) {
-		if (pull.action != 'synchronize' && pull.action != 'opened') {
+		if (pull.action !== undefined && pull.action != 'synchronize' && pull.action != 'opened') {
 			return;
 		}
 
