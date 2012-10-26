@@ -149,14 +149,14 @@ exports.init = function(config, mergeatron) {
 	}
 
 	function processPull(pull) {
-		mergeatron.mongo.pulls.findOne({ _id: pull.number }, function(error, item) {
+		mergeatron.db.pulls.findOne({ _id: pull.number }, function(error, item) {
 			var new_pull = false,
 				ssh_url = pull.head.repo.ssh_url,
 				branch = 'origin/' + pull.head.label.split(':')[1];
 
 			if (!item) {
 				new_pull = true;
-				mergeatron.mongo.pulls.insert({ _id: pull.number, number: pull.number, created_at: pull.created_at, updated_at: pull.updated_at, head: pull.head.sha, files: pull.files }, function(err) {
+				mergeatron.db.pulls.insert({ _id: pull.number, number: pull.number, created_at: pull.created_at, updated_at: pull.updated_at, head: pull.head.sha, files: pull.files }, function(err) {
 					if (err) {
 						console.log(err);
 						process.exit(1);
@@ -164,7 +164,7 @@ exports.init = function(config, mergeatron) {
 				});
 				pull.jobs = [];
 			} else {
-				// Before updating the list of files in mongo we need to make sure the set of reported lines is saved
+				// Before updating the list of files in db we need to make sure the set of reported lines is saved
 				item.files.forEach(function(file) {
 					pull.files.forEach(function(pull_file, i) {
 						if (pull_file.filename == file.filename) {
@@ -172,7 +172,7 @@ exports.init = function(config, mergeatron) {
 						}
 					});
 				});
-				mergeatron.mongo.pulls.update({ _id: pull.number }, { $set: { files: pull.files } });
+				mergeatron.db.pulls.update({ _id: pull.number }, { $set: { files: pull.files } });
 				pull.jobs = item.jobs;
 			}
 

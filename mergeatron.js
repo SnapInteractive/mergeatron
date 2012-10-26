@@ -1,14 +1,14 @@
 var config = require('./config').config,
-	mongo = require('mongojs').connect(config.mongo, ['pulls', 'jobs']),
+	db =  require('./db').init(),
 	fs = require('fs'),
 	events = require('events');
 
-var Mergeatron = function(mongo) {
-	this.mongo = mongo;
+var Mergeatron = function(db) {
+	this.db = db;
 };
 
-Mergeatron.prototype = new events.EventEmitter;
-mergeatron = new Mergeatron(mongo);
+Mergeatron.prototype = new events.EventEmitter();
+mergeatron = new Mergeatron(db);
 
 config.plugin_dirs.forEach(function(dir) {
 	fs.readdir(dir, function(err, files) {
@@ -32,7 +32,7 @@ config.plugin_dirs.forEach(function(dir) {
 				conf = config.plugins[pluginName];
 			}
 
-			if (conf.enabled == undefined || conf.enabled) {
+			if (conf.enabled === undefined || conf.enabled) {
 				require(filename).init(conf, mergeatron);
 			} else {
 				console.log('Not loading disabled plugin ' + pluginName);

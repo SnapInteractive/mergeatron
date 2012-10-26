@@ -43,7 +43,7 @@ exports.init = function(config, mergeatron) {
 
 							file.reported.push(line_number);
 							mergeatron.emit('pull.inline_status', pull, file.sha, file.filename, diff_offset, violation.message);
-							mergeatron.mongo.pulls.update({ _id: pull.number, 'files.filename': file.filename }, { $push: { 'files.$.reported': line_number }});
+							mergeatron.db.pulls.update({ _id: pull.number, 'files.filename': file.filename }, { $push: { 'files.$.reported': line_number }});
 						}
 					});
 				});
