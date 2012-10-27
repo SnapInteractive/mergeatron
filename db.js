@@ -1,3 +1,5 @@
+"use strict";
+
 var config = require('./config').config.db;
 exports.init = function() {
 	if (config.type === 'mongo') {

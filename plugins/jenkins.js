@@ -1,3 +1,5 @@
+"use strict";
+
 var request = require('request'),
 	url = require('url'),
 	uuid = require('node-uuid'),
@@ -13,7 +15,9 @@ exports.init = function(config, mergeatron) {
 						process.exit(1);
 					}
 
-					if (!pull) { return; }
+					if (!pull) {
+						return;
+					}
 					checkJob(pull);
 				});
 
@@ -24,7 +28,7 @@ exports.init = function(config, mergeatron) {
 		}
 	});
 
-	mergeatron.on('pull.processed', function(pull, pull_number, sha, ssh_url, branch, updated_at, triggered_by) {
+	mergeatron.on('pull.processed', function(pull, pull_number, sha, ssh_url, branch, updated_at) {
 		buildPull(pull, pull_number, sha, ssh_url, branch, updated_at);
 	});
 
@@ -67,10 +71,10 @@ exports.init = function(config, mergeatron) {
 						PULL: number
 					}
 				}),
-				method: 'GET',
+				method: 'GET'
 			};
 
-		request(options, function(error, response, body) {
+		request(options, function(error) {
 			if (error) {
 				console.log(error);
 				return;
@@ -99,7 +103,7 @@ exports.init = function(config, mergeatron) {
 					pathname: '/job/' + config.project + '/api/json',
 					query: {
 						tree: 'builds[number,url,actions[parameters[name,value]],building,result]'
-					},
+					}
 				}),
 				json: true
 			};
@@ -111,21 +115,21 @@ exports.init = function(config, mergeatron) {
 				}
 
 				build.actions[0].parameters.forEach(function(param) {
-					if (param['name'] == 'JOB' && param['value'] == job.id) {
+					if (param.name == 'JOB' && param.value == job.id) {
 						if (job.status == 'new') {
 							mergeatron.db.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'started' } });
-							mergeatron.emit('build.started', job, pull, build['url']);
+							mergeatron.emit('build.started', job, pull, build.url);
 						}
 
 						if (job.status != 'finished') {
-							if (build['result'] == 'FAILURE') {
+							if (build.result == 'FAILURE') {
 								mergeatron.db.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'finished' } });
-								mergeatron.emit('build.failed', job, pull, build['url'] + 'console');
+								mergeatron.emit('build.failed', job, pull, build.url + 'console');
 
 								processArtifacts(build, pull);
-							} else if (build['result'] == 'SUCCESS') {
+							} else if (build.result == 'SUCCESS') {
 								mergeatron.db.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'finished' } });
-								mergeatron.emit('build.succeeded', job, pull, build['url']);
+								mergeatron.emit('build.succeeded', job, pull, build.url);
 
 								processArtifacts(build, pull);
 							}
@@ -141,10 +145,10 @@ exports.init = function(config, mergeatron) {
 			url: url.format({
 				protocol: config.protocol,
 				host: config.host,
-				pathname: '/job/' + config.project + '/' + build['number'] + '/api/json',
+				pathname: '/job/' + config.project + '/' + build.number + '/api/json',
 				query: {
 					tree: 'artifacts[fileName,relativePath]'
-				},
+				}
 			}),
 			json: true
 		};
@@ -157,7 +161,7 @@ exports.init = function(config, mergeatron) {
 
 			var artifacts = response.body.artifacts;
 			for (var i in artifacts) {
-				artifacts[i]['url'] = build['url'] + 'artifact/' + artifacts[i]['relativePath'];
+				artifacts[i].url = build.url + 'artifact/' + artifacts[i].relativePath;
 				mergeatron.emit('build.artifact_found', build, pull, artifacts[i]);
 			}
 		});
