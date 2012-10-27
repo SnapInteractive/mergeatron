@@ -1,11 +1,8 @@
+"use strict";
+
 var request = require('request');
 
 exports.init = function(config, mergeatron) {
-	mergeatron.on('build.artifact_found', function (build, pull, artifact) {
-		if (artifact['relativePath'] == config.artifact) {
-			process(build, pull, artifact['url']);
-		}
-	});
 
 	function process(build, pull, artifact_url) {
 		request({ url: artifact_url }, function(err, response) {
@@ -15,7 +12,7 @@ exports.init = function(config, mergeatron) {
 			}
 
 			var violations = parseCsvFile(response.body);
-			pull.files.forEach(function(file, i) {
+			pull.files.forEach(function(file) {
 				if (file.status != 'modified' && file.status != 'added') {
 					return;
 				}
@@ -25,7 +22,7 @@ exports.init = function(config, mergeatron) {
 						return;
 					}
 
-					var line_number = parseInt(violation.line);
+					var line_number = parseInt(violation.line, 10);
 					if (file.reported.indexOf(line_number) != -1) {
 						return;
 					}
@@ -51,7 +48,7 @@ exports.init = function(config, mergeatron) {
 		});
 	}
 
-	function parseCsvFile(data, callback){
+	function parseCsvFile(data){
 		var iteration = 0,
 			header = [],
 			records = [],
@@ -65,7 +62,7 @@ exports.init = function(config, mergeatron) {
 				continue;
 			}
 
-			if (iteration++ == 0) {
+			if (iteration++ === 0) {
 				header = line.split(pattern);
 			} else {
 				records.push(buildRecord(line));
@@ -77,7 +74,7 @@ exports.init = function(config, mergeatron) {
 				fields = str.split(pattern);
 
 			for (var y in fields) {
-				if (header[y] != '') {
+				if (header[y]) {
 					record[header[y].toLowerCase()] = fields[y].replace(/"/g, '');
 				}
 			}
@@ -87,4 +84,10 @@ exports.init = function(config, mergeatron) {
 
 		return records;
 	}
+
+	mergeatron.on('build.artifact_found', function (build, pull, artifact) {
+		if (artifact.relativePath == config.artifact) {
+			process(build, pull, artifact.url);
+		}
+	});
 };
