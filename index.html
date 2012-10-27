@@ -4,29 +4,40 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <title>Mergeatron by SnapInteractive</title>
-
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <script src="javascripts/scale.fix.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
   </head>
   <body>
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/SnapInteractive/mergeatron">View On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/SnapInteractive/mergeatron/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/SnapInteractive/mergeatron/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
+
     <div class="wrapper">
-      <header>
-        <h1>Mergeatron</h1>
-        <p>A Node.JS bot that automatically runs builds for new, and updated, Pull Requests.</p>
-        <p class="view"><a href="https://github.com/SnapInteractive/mergeatron">View the Project on GitHub <small>SnapInteractive/mergeatron</small></a></p>
-        <ul>
-          <li><a href="https://github.com/SnapInteractive/mergeatron/zipball/master">Download <strong>ZIP File</strong></a></li>
-          <li><a href="https://github.com/SnapInteractive/mergeatron/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/SnapInteractive/mergeatron">View On <strong>GitHub</strong></a></li>
-        </ul>
-      </header>
+
       <section>
+        <div id="title">
+          <h1>Mergeatron</h1>
+          <p>A Node.JS bot that automatically runs builds for new, and updated, Pull Requests.</p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/SnapInteractive">SnapInteractive</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="http://twitter.com/#!/michigangraham">mattgraham</a></span>
+        </div>
+
         <h1>Mergeatron</h1>
 
 <p>Mergeatron is a Node.js bot that monitors a GitHub account for new, and updated, Pull Requests. When it finds any it will kick off a Jenkins build and reply to the Pull Request with a thumbs up, or down, depending on success or failure.</p>
@@ -72,6 +83,8 @@
 <li>
 <code>jenkins.frequency</code> - The frequency, in milliseconds, to poll Jenkins for updated build information. Increasing this will increase the time between when a build is started and Mergeatron knows it finished. Decreasing it too low can cause your Jenkins server to come under heavy load.</li>
 <li>
+<code>github.method</code> - Either "hooks" or "polling". If "hooks" you'll need to configure the <code>github.port</code> option and make sure this port is available to GitHub to post to. If "polling" you'll need to configure <code>github.frequency</code> for how often to poll their REST API.</li>
+<li>
 <code>github.auth.user</code> - The username of the GitHub user Mergeatron will be logging in, and posting, as. This user must have visibility to your repos Pull Requests.</li>
 <li>
 <code>github.auth.pass</code> - The password for the GitHub user Mergeatron will be using.</li>
@@ -81,7 +94,21 @@
 <code>github.repo</code> - The repo you want Mergeatron to keep an eye on.</li>
 <li>
 <code>github.frequency</code> - The frequency, in milliseconds, with which to poll GitHub for new and updated Pull Requests. Be mindful of your <a href="http://developer.github.com/v3/#rate-limiting">API rate limit</a> when setting this.</li>
-</ul><h2>Configuring Jenkins</h2>
+<li>
+<code>github.port</code> - The port you want to allow GitHub to post to.</li>
+<li>
+<code>phpcs.artifact</code> - The name of the artifact file that contains PHP Code Sniffer results. If no artifact with this name is found the plugin won't do anything.</li>
+</ul><h2>Setting Up GitHub</h2>
+
+<p>There are two ways you can use the GitHub plugin. You can either have it poll GitHub's REST API periodically looking for changes. The downside to this approach is that it's very inefficienct, especially if you have a low volume of Pull Requests or if pull requests can sit for a while before being merged or closed. You also run into issues with rate limiting if you have too much activity or poll too frequently.</p>
+
+<p>Alternatively you can use GitHub's webhooks and let them push new and updated pull requests to you. This is far more efficient but does mean you have to open a port for them to connect to. They provide the list of public IPs they post from so you can lock down the port for increased security.</p>
+
+<p>To configure your setup for polling you need to set <code>github.method</code> to "polling" and will want to tweak the <code>github.frequency</code> setting to match how often you want to poll their API. Keep in mind they do have rate limiting so don't make it too frequent. The default here, or higher, should be pefectly fine.</p>
+
+<p>To configure your setup for webhooks you need to set <code>github.method</code> to "hooks" and set <code>github.port</code> to the port number you're opening for them. You'll also need to setup he webhook with GitHub. You can execute <code>nodejs bin/github_setup.js</code> and provide the details it asks for to set one you. You'll want to read <a href="http://developer.github.com/v3/repos/hooks/">their documentation</a> for more information on webhooks.</p>
+
+<h2>Configuring Jenkins</h2>
 
 <p>To configure Jenkins you will need to make sure you have the appropriate git plugin installed. I'm assuming you already know how to do that and already have it up and running successfully. Once you do follow the below steps.</p>
 
@@ -128,22 +155,35 @@ git remote prune origin
 <p>Below is a very basic example:</p>
 
 <div class="highlight"><pre><span class="nx">exports</span><span class="p">.</span><span class="nx">init</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">config</span><span class="p">,</span> <span class="nx">mergeatron</span><span class="p">)</span> <span class="p">{</span>
-   <span class="c1">// Do some stuff we want to execute once on startup/init</span>
+<span class="c1">// Do some stuff we want to execute once on startup/init</span>
 
-   <span class="nx">mergeatron</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'build.started'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">job_id</span><span class="p">,</span> <span class="nx">job</span><span class="p">,</span> <span class="nx">build_url</span><span class="p">)</span> <span class="p">{</span>
-       <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">job_id</span> <span class="o">+</span> <span class="s1">' has started building!'</span><span class="p">);</span>
-   <span class="p">});</span>
+<span class="nx">mergeatron</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'build.started'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">job_id</span><span class="p">,</span> <span class="nx">job</span><span class="p">,</span> <span class="nx">build_url</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">job_id</span> <span class="o">+</span> <span class="s1">' has started building!'</span><span class="p">);</span>
+<span class="p">});</span>
 <span class="p">}</span>
-
 </pre></div>
+
+<h2>Events</h2>
 </li>
+<li><p>''pull.found'' - This is the first event emitted in a builds life cycle. It allows any listening plugins to check the build to make sure it should be handled.</p></li>
+<li><p>''pull.validated'' - If a build should be acted upon this event will be emitted. It allows any listening plugins to setup the build for processing. This means persisting it to a temporary, or permenant, data store of their choice and doing any other setup work they need to.</p></li>
+<li><p>''pull.processed'' - Once a build has been pre-processed it is ready to be built. When that happens this event is emitted. Any listening plugins can start the build.</p></li>
+<li><p>''build.started'' - This event is emitted when the build has been started.</p></li>
+<li><p>''build.succeeded'' - This event is emitted when a build was successful.</p></li>
+<li><p>''build.failed'' - This event is emitted when a build has failed.</p></li>
+<li><p>''pull.inline_status'' - This event is emitted when a plugin is announcing that something was found on a specific line of a files diff within the build.</p></li>
+<li>
+<p>''build.artifact_found'' - This event is emitted once for each artifact found after the build has finished. Plugins receive the URL to the artifact and can download and act upon it if wanted.</p>
+
+<h2>Contributing</h2>
+</li>
+<li><p>Please use topic branches when submitting pull requests. Please don't submit PR's from master.</p></li>
+<li><p>Take care to follow the existing style. We have no formal style guide as of yet, but follow the idiomatic JS principle of: "All code in any code-base should look like a single person typed it, no matter how many people contributed."</p></li>
+<li><p>We use <code>grunt</code> to manage the build. Make sure you run <code>grunt</code> before submitting a pull request, as this will run jshint on the code. If you want continuous linting on file save, use <code>grunt watch</code>.</p></li>
 </ul>
       </section>
+
     </div>
-    <footer>
-      <p>Project maintained by <a href="https://github.com/SnapInteractive">SnapInteractive</a></p>
-      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
-    </footer>
     <!--[if !IE]><script>fixScale(document);</script><![endif]-->
     
   </body>
