@@ -1,3 +1,5 @@
+"use strict";
+
 var http = require('http'),
 	async = require('async'),
 	emitter = require('events').EventEmitter,
@@ -17,7 +19,7 @@ exports.init = function(config, mergeatron) {
 		password: config.auth.pass
 	});
 
-	if (config.method == 'hooks') {
+	if (config.method === 'hooks') {
 		setupServer();
 	} else {
 		setupPolling();
@@ -28,15 +30,15 @@ exports.init = function(config, mergeatron) {
 	});
 
 	mergeatron.on('build.started', function(job, pull, build_url) {
-		createStatus(job['head'], 'pending', build_url, 'Testing Pull Request');
+		createStatus(job.head, 'pending', build_url, 'Testing Pull Request');
 	});
 
 	mergeatron.on('build.failed', function(job, pull, build_url) {
-		createStatus(job['head'], 'failure', build_url, 'Build failed');
+		createStatus(job.head, 'failure', build_url, 'Build failed');
 	});
 
 	mergeatron.on('build.succeeded', function(job, pull, build_url) {
-		createStatus(job['head'], 'success', build_url, 'Build succeeded');
+		createStatus(job.head, 'success', build_url, 'Build succeeded');
 	});
 
 	mergeatron.on('pull.inline_status', function(pull, sha, file, position, comment) {
@@ -104,7 +106,7 @@ exports.init = function(config, mergeatron) {
 					length = null,
 					deletions = [],
 					modified_length,
-					offset = 0.
+					offset = 0,
 					line_number = 0;
 
 				file.ranges = [];
@@ -114,8 +116,8 @@ exports.init = function(config, mergeatron) {
 					var matches = line.match(/^@@ -\d+,\d+ \+(\d+),(\d+) @@/);
 					if (matches) {
 						if (start == null && length == null) {
-							start = parseInt(matches[1]);
-							length = parseInt(matches[2]);
+							start = parseInt(matches[1], 10);
+							length = parseInt(matches[2], 10);
 							line_number = start;
 						} else {
 							// The one is for the line in the diff block containing the line numbers
@@ -123,8 +125,8 @@ exports.init = function(config, mergeatron) {
 							file.ranges.push([ start, start + length, modified_length, offset, deletions ]);
 
 							deletions = [];
-							start = parseInt(matches[1]);
-							length = parseInt(matches[2]);
+							start = parseInt(matches[1], 10);
+							length = parseInt(matches[2], 10);
 							offset += modified_length;
 							line_number = start;
 						}
@@ -182,14 +184,14 @@ exports.init = function(config, mergeatron) {
 			}
 
 			if (typeof pull.skip_comments != 'undefined' && pull.skip_comments) {
-				mergeatron.emit('pull.processed', pull, pull.number, pull.head.sha, ssh_url, branch, pull.updated_at, resp[i].user.login);
+				mergeatron.emit('pull.processed', pull, pull.number, pull.head.sha, ssh_url, branch, pull.updated_at);
 				return;
 			}
 
 			GitHub.issues.getComments({ user: config.user, repo: config.repo, number: pull.number, per_page: 100 }, function(error, resp) {
-				for (i in resp) {
+				for (var i in resp) {
 					if (resp[i].created_at > item.updated_at && resp[i].body.indexOf('@' + config.auth.user + ' retest') != -1) {
-						mergeatron.emit('pull.processed', pull, pull.number, pull.head.sha, ssh_url, branch, pull.updated_at, resp[i].user.login);
+						mergeatron.emit('pull.processed', pull, pull.number, pull.head.sha, ssh_url, branch, pull.updated_at);
 						return;
 					}
 				}
@@ -240,7 +242,7 @@ exports.init = function(config, mergeatron) {
 							return;
 						}
 
-						for (i in resp) {
+						for (var i in resp) {
 							var pull = resp[i],
 								number = pull.number;
 

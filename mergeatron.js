@@ -1,3 +1,5 @@
+"use strict";
+
 var config = require('./config').config,
 	db =  require('./db').init(),
 	fs = require('fs'),
@@ -8,7 +10,7 @@ var Mergeatron = function(db) {
 };
 
 Mergeatron.prototype = new events.EventEmitter();
-mergeatron = new Mergeatron(db);
+var mergeatron = new Mergeatron(db);
 
 config.plugin_dirs.forEach(function(dir) {
 	fs.readdir(dir, function(err, files) {
