@@ -13,7 +13,7 @@ Mergeatron is intended to assist with reviewing Pull Requests by providing, at a
 ## Installation Instructions
 
 ```
-	git clone git@github.com:steves/mergeatron.git
+	git clone git@github.com:SnapInteractive/mergeatron.git
 	npm install
 
 	// Copy config.sample.js to config.js and update accordingly
