@@ -9,7 +9,7 @@ exports.init = function(config, mergeatron) {
 	async.parallel({
 		'jenkins': function() {
 			var run_jenkins = function() {
-				mergeatron.db.pulls.find({ 'jobs.status': { $in: ['new', 'started'] }}).forEach(function(err, pull) {
+				mergeatron.db.findPullsByJobStatus(['new', 'started'], function(err, pull) {
 					if (err) {
 						console.log(err);
 						process.exit(1);
@@ -80,17 +80,12 @@ exports.init = function(config, mergeatron) {
 				return;
 			}
 
-			if (typeof pull.jobs == 'undefined') {
-				pull.jobs = [];
-			}
-
-			pull.jobs.push({
+			mergeatron.db.updatePull(number, { head: sha, updated_at: updated_at});
+			mergeatron.db.insertJob(pull, {
 				id: job_id,
 				status: 'new',
 				head: sha
 			});
-
-			mergeatron.db.pulls.update({ _id: number }, { $set: { head: sha, updated_at: updated_at, jobs: pull.jobs } });
 		});
 	}
 
@@ -122,18 +117,18 @@ exports.init = function(config, mergeatron) {
 				build.actions[0].parameters.forEach(function(param) {
 					if (param.name == 'JOB' && param.value == job.id) {
 						if (job.status == 'new') {
-							mergeatron.db.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'started' } });
+							mergeatron.db.updateJobStatus(job.id, 'started');
 							mergeatron.emit('build.started', job, pull, build.url);
 						}
 
 						if (job.status != 'finished') {
 							if (build.result == 'FAILURE') {
-								mergeatron.db.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'finished' } });
+								mergeatron.db.updateJobStatus(job.id, 'finished');
 								mergeatron.emit('build.failed', job, pull, build.url + 'console');
 
 								processArtifacts(build, pull);
 							} else if (build.result == 'SUCCESS') {
-								mergeatron.db.pulls.update({ 'jobs.id': job.id }, { $set: { 'jobs.$.status': 'finished' } });
+								mergeatron.db.updateJobStatus(job.id, 'finished');
 								mergeatron.emit('build.succeeded', job, pull, build.url);
 
 								processArtifacts(build, pull);

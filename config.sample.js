@@ -7,8 +7,7 @@ exports.config = {
 			pass: 'password',
 			port: 3306
 		},
-		database: 'mergeatron',
-		tables: ['jobs', 'pulls']
+		database: 'mergeatron'
 	},
 	plugin_dirs: [ './plugins/' ],
 	plugins: {
