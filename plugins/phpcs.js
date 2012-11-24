@@ -40,7 +40,7 @@ exports.init = function(config, mergeatron) {
 
 							file.reported.push(line_number);
 							mergeatron.emit('pull.inline_status', pull, file.sha, file.filename, diff_offset, violation.message);
-							mergeatron.db.insertLineStatus(pull.number, file.filename , line_number);
+							mergeatron.db.insertLineStatus(pull, file.filename , line_number);
 						}
 					});
 				});

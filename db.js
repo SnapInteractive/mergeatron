@@ -48,12 +48,64 @@ exports.init = function() {
 	};
 
 	// inline status methods
-	MongoDB.prototype.insertLineStatus = function(pull_number, filename, line_number) {
-		this.connection.pulls.update({ _id: pull_number, 'files.filename': filename }, { $push: { 'files.$.reported': line_number } });
+	MongoDB.prototype.insertLineStatus = function(pull, filename, line_number) {
+		this.connection.pulls.update({ _id: pull.number, 'files.filename': filename }, { $push: { 'files.$.reported': line_number } });
+	};
+
+	// MySQL abstraction layer
+	var MySQL = function() {
+		this.connection = require('mysql').createConnection({
+			host: config.auth.host,
+			user: config.auth.user,
+			password: config.auth.pass,
+			database: config.database
+		});
+	};
+
+	// pull methods
+	MySQL.prototype.findPull = function(pull_number, callback) {
+		this.connection.query('SELECT * FROM pulls,jobs WHERE pulls.id = jobs.pull_number AND pulls.id = ?', pull_number, function (err, result){
+			// todo: transform result
+			var response = result;
+			callback(err, response);
+		});
+	};
+
+	MySQL.prototype.updatePull = function(pull_number, update_columns) {
+		this.connection.query('UPDATE pulls SET ? WHERE id = ?', [ update_columns, pull_number ]);
+	};
+
+	MySQL.prototype.insertPull = function(pull, callback) {
+		this.connection.query('INSERT INTO pulls SET ?', pull, callback);
+	};
+
+	MySQL.prototype.findPullsByJobStatus = function(statuses, callback) {
+		this.connection.query('SELECT * FROM pulls,jobs WHERE pulls.id = jobs.pull_number AND jobs.status IN ?', [ statuses ], function (err, result){
+			// todo: transform result
+			var response = result;
+			callback(err, response);
+		});
+	};
+
+	// job methods
+	MySQL.prototype.insertJob = function(pull, job, callback) {
+		job.pull_number = pull.number;
+		this.connection.query('INSERT INTO jobs SET ?', [ job ], callback);
+	};
+
+	MySQL.prototype.updateJobStatus = function(job_id, status) {
+		this.connection.query('UPDATE jobs SET status = ? WHERE id = ?', [ status, job_id ]);
+	};
+
+	// inline status methods
+	MySQL.prototype.insertLineStatus = function(/* pull_number, filename, line_number */) {
+		// todo: implement
 	};
 
 
 	if (config.type === 'mongo') {
 		return new MongoDB();
+	} else if (config.type === 'mysql') {
+		return new MySQL();
 	}
 };
