@@ -64,23 +64,44 @@ exports.init = function() {
 
 	// pull methods
 	MySQL.prototype.findPull = function(pull_number, callback) {
-		this.connection.query('SELECT * FROM pulls,jobs WHERE pulls.id = jobs.pull_number AND pulls.id = ?', pull_number, function (err, result){
-			// todo: transform result
-			var response = result;
+		this.connection.query('SELECT pulls.*, jobs.status, jobs.id as job_id, jobs.head as jobs_head FROM pulls LEFT JOIN jobs ON pulls.id = jobs.pull_number WHERE pulls.id = ?', [ pull_number ], function (err, result){
+			var response;
+			if (result.length) {
+				response = result[0];
+				response.files = JSON.parse(response.files);
+				response.jobs = [];
+				result.forEach(function(row) {
+					response.jobs.push({
+						id: row.job_id,
+						status: row.status,
+						head: row.head
+					});
+				});
+			}
 			callback(err, response);
 		});
 	};
 
 	MySQL.prototype.updatePull = function(pull_number, update_columns) {
+		if (update_columns.files && typeof update_columns.files !== 'string'){
+			update_columns.files = JSON.stringify(update_columns.files);
+		}
 		this.connection.query('UPDATE pulls SET ? WHERE id = ?', [ update_columns, pull_number ]);
 	};
 
 	MySQL.prototype.insertPull = function(pull, callback) {
-		this.connection.query('INSERT INTO pulls SET ?', pull, callback);
+		this.connection.query('INSERT INTO pulls SET ?', {
+			id: pull.number,
+			number: pull.number,
+			created_at: pull.created_at,
+			updated_at: pull.updated_at,
+			head: pull.head.sha,
+			files: JSON.stringify(pull.files)
+		}, callback);
 	};
 
 	MySQL.prototype.findPullsByJobStatus = function(statuses, callback) {
-		this.connection.query('SELECT * FROM pulls,jobs WHERE pulls.id = jobs.pull_number AND jobs.status IN ?', [ statuses ], function (err, result){
+		this.connection.query('SELECT pulls.*, jobs.status, jobs.id as job_id, jobs.head FROM pulls LEFT JOIN jobs ON pulls.id = jobs.pull_number WHERE jobs.status IN (?)', [ statuses ], function (err, result){
 			// todo: transform result
 			var response = result;
 			callback(err, response);
