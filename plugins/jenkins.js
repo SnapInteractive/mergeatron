@@ -109,6 +109,11 @@ exports.init = function(config, mergeatron) {
 			};
 
 		request(options, function(error, response) {
+			if (error) {
+				console.log('could not connect to jenkins, there seems to be a connectivity issue!');
+				return;
+			}
+
 			response.body.builds.forEach(function(build) {
 				if (typeof build.actions == 'undefined' || typeof build.actions[0].parameters == 'undefined' || !build.actions[0].parameters) {
 					return;
