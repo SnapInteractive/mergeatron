@@ -101,10 +101,37 @@ exports.init = function() {
 	};
 
 	MySQL.prototype.findPullsByJobStatus = function(statuses, callback) {
-		this.connection.query('SELECT pulls.*, jobs.status, jobs.id as job_id, jobs.head FROM pulls LEFT JOIN jobs ON pulls.id = jobs.pull_number WHERE jobs.status IN (?)', [ statuses ], function (err, result){
-			// todo: transform result
-			var response = result;
-			callback(err, response);
+		this.connection.query('SELECT pulls.*, jobs.status, jobs.id as job_id, jobs.head as job_head FROM pulls LEFT JOIN jobs ON pulls.id = jobs.pull_number WHERE jobs.status IN (?) ORDER BY pulls.id ASC', [ statuses ], function (err, result){
+			if (!result.length){
+				return;
+			}
+
+			var new_result = [],
+				new_row,
+				cur_pull;
+
+			result.forEach(function(row) {
+				if(cur_pull != row.number){
+					if(new_row){
+						new_result.push(new_row);
+					}
+					new_row = row;
+					new_row.jobs = [];
+					cur_pull = row.number;
+				}
+
+				new_row.jobs.push({
+					id: row.job_id,
+					status: row.status,
+					head: row.job_head
+				});
+			});
+
+			new_result.push(new_row);
+
+			new_result.forEach(function(row){
+				callback(err, row);
+			});
 		});
 	};
 
