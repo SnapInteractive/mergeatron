@@ -74,6 +74,12 @@ exports.init = function(config, mergeatron) {
 				method: 'GET'
 			};
 
+		if(config.user && config.pass){
+			options.headers = {
+				authorization: 'Basic ' + (new Buffer(config.user + ":" + config.pass, 'ascii').toString('base64'))
+			};
+		}
+
 		request(options, function(error) {
 			if (error) {
 				console.log(error);
@@ -97,6 +103,7 @@ exports.init = function(config, mergeatron) {
 					host: config.host,
 					pathname: '/job/' + config.project + '/api/json',
 					query: {
+
 						tree: 'builds[number,url,actions[parameters[name,value]],building,result]'
 					}
 				}),

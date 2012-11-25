@@ -26,6 +26,8 @@ exports.config = {
 		},
 		jenkins:  {
 			token: 'token',
+			user: false,
+			pass: false,
 			protocol: 'http',
 			host: 'jenkins.yoururl.com:8080',
 			project: 'project_name',
