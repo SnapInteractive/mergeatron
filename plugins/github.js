@@ -151,14 +151,14 @@ exports.init = function(config, mergeatron) {
 	}
 
 	function processPull(pull) {
-		mergeatron.db.pulls.findOne({ _id: pull.number }, function(error, item) {
+		mergeatron.db.findPull(pull.number, function(error, item) {
 			var new_pull = false,
 				ssh_url = pull.head.repo.ssh_url,
 				branch = 'origin/' + pull.head.label.split(':')[1];
 
 			if (!item) {
 				new_pull = true;
-				mergeatron.db.pulls.insert({ _id: pull.number, number: pull.number, created_at: pull.created_at, updated_at: pull.updated_at, head: pull.head.sha, files: pull.files }, function(err) {
+				mergeatron.db.insertPull(pull, function(err) {
 					if (err) {
 						console.log(err);
 						process.exit(1);
@@ -174,7 +174,7 @@ exports.init = function(config, mergeatron) {
 						}
 					});
 				});
-				mergeatron.db.pulls.update({ _id: pull.number }, { $set: { files: pull.files } });
+				mergeatron.db.updatePull(pull.number, { files: pull.files });
 				pull.jobs = item.jobs;
 			}
 

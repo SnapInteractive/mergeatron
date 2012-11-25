@@ -5,10 +5,10 @@ exports.config = {
 		auth: {
 			user: 'username',
 			pass: 'password',
+			host: 'localhost',
 			port: 3306
 		},
-		database: 'mergeatron',
-		tables: ['jobs', 'pulls']
+		database: 'mergeatron'
 	},
 	plugin_dirs: [ './plugins/' ],
 	plugins: {
@@ -26,6 +26,8 @@ exports.config = {
 		},
 		jenkins:  {
 			token: 'token',
+			user: false,
+			pass: false,
 			protocol: 'http',
 			host: 'jenkins.yoururl.com:8080',
 			project: 'project_name',
