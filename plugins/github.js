@@ -154,7 +154,7 @@ exports.init = function(config, mergeatron) {
 		mergeatron.db.findPull(pull.number, function(error, item) {
 			var new_pull = false,
 				ssh_url = pull.head.repo.ssh_url,
-				branch = 'origin/' + pull.head.label.split(':')[1];
+				branch = pull.head.label.split(':')[1];
 
 			if (!item) {
 				new_pull = true;
