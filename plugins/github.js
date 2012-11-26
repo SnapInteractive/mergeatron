@@ -112,30 +112,35 @@ exports.init = function(config, mergeatron) {
 				file.ranges = [];
 				file.reported = [];
 				file.sha = file.blob_url.match(/blob\/([^\/]+)/)[1];
-				file.patch.split('\n').forEach(function(line) {
-					var matches = line.match(/^@@ -\d+,\d+ \+(\d+),(\d+) @@/);
-					if (matches) {
-						if (start == null && length == null) {
-							start = parseInt(matches[1], 10);
-							length = parseInt(matches[2], 10);
-							line_number = start;
-						} else {
-							// The one is for the line in the diff block containing the line numbers
-							modified_length = 1 + length + deletions.length;
-							file.ranges.push([ start, start + length, modified_length, offset, deletions ]);
 
-							deletions = [];
-							start = parseInt(matches[1], 10);
-							length = parseInt(matches[2], 10);
-							offset += modified_length;
-							line_number = start;
+				// the github API doesn't return the actual
+				// patch when it's exceedingly large
+				if (file.patch) {
+					file.patch.split('\n').forEach(function(line) {
+						var matches = line.match(/^@@ -\d+,\d+ \+(\d+),(\d+) @@/);
+						if (matches) {
+							if (start == null && length == null) {
+								start = parseInt(matches[1], 10);
+								length = parseInt(matches[2], 10);
+								line_number = start;
+							} else {
+								// The one is for the line in the diff block containing the line numbers
+								modified_length = 1 + length + deletions.length;
+								file.ranges.push([ start, start + length, modified_length, offset, deletions ]);
+
+								deletions = [];
+								start = parseInt(matches[1], 10);
+								length = parseInt(matches[2], 10);
+								offset += modified_length;
+								line_number = start;
+							}
+						} else if (line.indexOf('-') === 0) {
+							deletions.push(line_number);
+						} else {
+							line_number += 1;
 						}
-					} else if (line.indexOf('-') === 0) {
-						deletions.push(line_number);
-					} else {
-						line_number += 1;
-					}
-				});
+					});
+				}
 
 				if (start != null && length != null) {
 					file.ranges.push([ start, start + length, 1 + length + deletions.length, offset, deletions ]);
