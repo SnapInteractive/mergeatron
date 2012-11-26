@@ -68,7 +68,8 @@ exports.init = function(config, mergeatron) {
 						REPOSITORY_URL: ssh_url,
 						BRANCH_NAME: branch,
 						JOB: job_id,
-						PULL: number
+						PULL: number,
+						BASE_BRANCH_NAME: pull.base.ref
 					}
 				}),
 				method: 'GET'

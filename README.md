@@ -68,19 +68,15 @@ To configure Jenkins you will need to make sure you have the appropriate git plu
  * Provide the following shell script as a build step:
 
 ```shell
-git reset --hard HEAD
-
-git remote set-url origin ${REPOSITORY_URL}
 git fetch origin
+git remote rm mergeatron || echo "No Mergeatron Remote"
+git remote add -f mergeatron ${REPOSITORY_URL}
 
-git checkout master
-git pull upstream master
-
-git checkout ${BRANCH_NAME}
-git merge master
+git checkout mergeatron/${BRANCH_NAME}
+git merge origin/${BASE_BRANCH_NAME}
 git clean -fdx
 
-git remote prune origin
+git remote prune mergeatron
 ```
 
  * Update the above shell script to have the proper references to your master branch. You'll need to manually ensure that `origin` and `upstream` are created.
