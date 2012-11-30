@@ -19,7 +19,7 @@ exports.config = {
 				pass: 'password'
 			},
 			user: 'user-to-watch',
-			repo: 'repo_name',
+			repos: [ 'repo_name' ],
 			skip_file_listing: false,
 			frequency: 15000,    // only necessary if method is 'polling'
 			port: '8888'         // only necessary if method is 'hooks'
@@ -30,8 +30,11 @@ exports.config = {
 			pass: false,
 			protocol: 'http',
 			host: 'jenkins.yoururl.com:8080',
-			project: 'project_name',
-			rules: [ new RegExp(/.php/g) ],
+			projects: [{
+				name: 'project_name',
+				repo: 'repo_name',
+				rules: [ new RegExp(/.php/g) ]
+			}],
 			frequency: 2000
 		},
 		phpcs: {
