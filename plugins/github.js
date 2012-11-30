@@ -4,8 +4,7 @@ var http = require('http'),
 	async = require('async'),
 	emitter = require('events').EventEmitter,
 	events = new emitter(),
-	GitHubApi = require('github'),
-	GitHub = new GitHubApi({ version: '3.0.0' });
+	GitHubApi = require('github');
 
 // We only want to accept local requests and GitHub requests. See the Service Hooks
 // page of any repo you have admin access to to see the list of GitHub public IPs.
@@ -13,6 +12,14 @@ var allowed_ips = [ '127.0.0.1', '207.97.227.253', '50.57.128.197', '108.171.174
 	allowed_events = [ 'pull_request', 'issue_comment' ];
 
 exports.init = function(config, mergeatron) {
+	config.api = config.api || {};
+
+	var GitHub = new GitHubApi({
+		version: '3.0.0',
+		host: config.api.host || null,
+		port: config.api.port || null
+	});
+
 	GitHub.authenticate({
 		type: 'basic',
 		username: config.auth.user,
