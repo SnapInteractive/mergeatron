@@ -21,6 +21,7 @@ exports.init = function() {
 		this.connection.pulls.insert({
 			_id: pull.number,
 			number: pull.number,
+			repo: pull.repo,
 			created_at: pull.created_at,
 			updated_at: pull.updated_at,
 			head: pull.head.sha,
@@ -93,6 +94,7 @@ exports.init = function() {
 		this.connection.query('INSERT INTO pulls SET ?', {
 			id: pull.number,
 			number: pull.number,
+			repo: pull.repo,
 			created_at: pull.created_at,
 			updated_at: pull.updated_at,
 			head: pull.head.sha,
