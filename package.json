@@ -1,16 +1,17 @@
 {
-	"name": "Mergeatron",
 	"version": "0.1.2",
+	"name": "Mergeatron",
+	"description": "A helpful PR monitor that runs jenkins builds when Pull Requests are created and updated",
 	"author": "SNAP Interactive, Inc.",
 	"contributors": [
-        "Steven Surowiec <steven.surowiec@gmail.com>"
-    ],
-	"description": "A helpful PR monitor that runs jenkins builds when Pull Requests are created and updated",
+		"Steven Surowiec <steven.surowiec@gmail.com>",
+		"Mike Sherov <mike.sherov@gmail.com>"
+	],
 
 	"licenses": [{
-        "type": "Apache-2.0"
-      , "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }],
+		"type": "Apache-2.0",
+		"url": "http://www.apache.org/licenses/LICENSE-2.0"
+	}],
 
 	"repository": {
 		"type": "git",
@@ -26,6 +27,7 @@
 		"node-uuid" : ">=1.3.3",
 		"async" : ">=0.1.22"
 	},
+
 	"devDependencies": {
 		"grunt": "0.3.17"
 	},

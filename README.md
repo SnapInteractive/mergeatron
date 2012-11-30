@@ -6,13 +6,13 @@ Mergeatron is intended to assist with reviewing Pull Requests by providing, at a
 
 ## Requirements
 
- * [MongoDB](http://www.mongodb.org/)
  * [Node.js](http://nodejs.org/)
  * [NPM](https://npmjs.org/)
+ * [MongoDB](http://www.mongodb.org/) - or - [MySQL](http://mysql.com)
 
 ## Installation Instructions
 
-```
+```shell
 	git clone git@github.com:SnapInteractive/mergeatron.git
 	npm install
 
@@ -24,7 +24,10 @@ Mergeatron is intended to assist with reviewing Pull Requests by providing, at a
 
 To configure Mergeatron copy the `config.sample.js` file to `config.js` in the same directory. The settings you will need to change are:
 
- * `mongo` - This is the connection string to use for mongo. For more information on this see the [mongojs](https://github.com/gett/mongojs) documentation.
+ * `db` - This contains the database provider you wish to use and any connection information for it. For more information on the drivers user: [mongojs](https://github.com/gett/mongojs), [mysql](https://npmjs.org/package/mysql).
+ * `db.type` - Either "mongo" for MongoDB or "mysql" for MySQL..
+ * `db.auth` - An object containing `user`, `pass`, `host`, and `port` options for logging into the database. All must be provided.
+ * `db.database` - The name of the database that Mergeatron should use.
  * `plugins_dir` - This is the directory where the plugins live. Chances are you won't need to change this.
 
 Mergeatron comes with multiple different plugins you can opt to use. By default any plugin found in your `config.js` will be included and run. If you want to disable a certain plugin you can either remove it or add `enabled: false` to that plugins configuration.
@@ -81,27 +84,27 @@ git remote prune mergeatron
 
  * Update the above shell script to have the proper references to your master branch. You'll need to manually ensure that `origin` and `upstream` are created.
 
- ## Extending Mergeatron
+## Extending Mergeatron
 
- Mergeatron is built with extensibility in mind. To help achieve this it's been built around events instead of direct calls between plugins. This enables you to easily write any plugin you want that listens on the existing events and/or emits your own that others can use.
+Mergeatron is built with extensibility in mind. To help achieve this it's been built around events instead of direct calls between plugins. This enables you to easily write any plugin you want that listens on the existing events and/or emits your own that others can use.
 
- Any file found in your configured `plugins_dir` directory is assumed to be a plugin and will be loaded unless disabled via your `config.js` file. To turn off a plugin just provide an entry for it under the `plugins` config with `enabled: false`. The file will then not be included.
+Any file found in your configured `plugins_dir` directory is assumed to be a plugin and will be loaded unless disabled via your `config.js` file. To turn off a plugin just provide an entry for it under the `plugins` config with `enabled: false`. The file will then not be included.
 
- All plugins are expected to export an `init` function that is executed and passed two parameters. The first is your plugins config settings and the second is a `Mergeatron` object. The `Mergeatron` object contains a reference to mongo but, more importantly, is also an `EventEmitter`. You can bind your listeners to this object and use it to emit events.
+All plugins are expected to export an `init` function that is executed and passed two parameters. The first is your plugins config settings and the second is a `Mergeatron` object. The `Mergeatron` object contains a reference to mongo but, more importantly, is also an `EventEmitter`. You can bind your listeners to this object and use it to emit events.
 
- Below is a very basic example:
+Below is a very basic example:
 
- ```javascript
- exports.init = function(config, mergeatron) {
- 	// Do some stuff we want to execute once on startup/init
+```javascript
+exports.init = function(config, mergeatron) {
+    // Do some stuff we want to execute once on startup/init
 
- 	mergeatron.on('build.started', function(job_id, job, build_url) {
-		console.log(job_id + ' has started building!');
- 	});
- }
- ```
+    mergeatron.on('build.started', function(job_id, job, build_url) {
+        console.log(job_id + ' has started building!');
+    });
+}
+```
 
- ## Events
+## Events
 
  * ''pull.found'' - This is the first event emitted in a builds life cycle. It allows any listening plugins to check the build to make sure it should be handled.
  * ''pull.validated'' - If a build should be acted upon this event will be emitted. It allows any listening plugins to setup the build for processing. This means persisting it to a temporary, or permenant, data store of their choice and doing any other setup work they need to.
@@ -112,7 +115,7 @@ git remote prune mergeatron
  * ''pull.inline_status'' - This event is emitted when a plugin is announcing that something was found on a specific line of a files diff within the build.
  * ''build.artifact_found'' - This event is emitted once for each artifact found after the build has finished. Plugins receive the URL to the artifact and can download and act upon it if wanted.
 
- ## Contributing
+## Contributing
 
  * Please use topic branches when submitting pull requests. Please don't submit PR's from master.
  * Take care to follow the existing style. We have no formal style guide as of yet, but follow the idiomatic JS principle of: "All code in any code-base should look like a single person typed it, no matter how many people contributed."
