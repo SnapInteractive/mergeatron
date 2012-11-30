@@ -28,6 +28,7 @@ exports.init = function(config, mergeatron) {
 
 	if (config.method === 'hooks') {
 		setupServer();
+		checkRepos();
 	} else {
 		setupPolling();
 	}
@@ -256,9 +257,7 @@ exports.init = function(config, mergeatron) {
 		async.parallel({
 			'github': function() {
 				var run_github = function() {
-					config.repos.forEach(function(repo) {
-						checkRepo(config.user, repo);
-					});
+					checkRepos();
 
 					setTimeout(run_github, config.frequency);
 				};
@@ -268,23 +267,25 @@ exports.init = function(config, mergeatron) {
 		});
 	}
 
-	function checkRepo(user, repo) {
-		GitHub.pullRequests.getAll({ 'user': config.user, 'repo': repo, 'state': 'open' }, function(error, resp) {
-			if (error) {
-				console.log(error);
-				return;
-			}
-
-			for (var i in resp) {
-				var pull = resp[i],
-					number = pull.number;
-
-				if (!number || number == 'undefined') {
-					continue;
+	function checkRepos() {
+		config.repos.forEach(function(repo) {
+			GitHub.pullRequests.getAll({ 'user': config.user, 'repo': repo, 'state': 'open' }, function(error, resp) {
+				if (error) {
+					console.log(error);
+					return;
 				}
 
-				events.emit('pull_request', pull);
-			}
+				for (var i in resp) {
+					var pull = resp[i],
+						number = pull.number;
+
+					if (!number || number == 'undefined') {
+						continue;
+					}
+
+					events.emit('pull_request', pull);
+				}
+			});
 		});
 	}
 };
