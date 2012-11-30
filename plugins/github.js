@@ -30,21 +30,21 @@ exports.init = function(config, mergeatron) {
 	});
 
 	mergeatron.on('build.started', function(job, pull, build_url) {
-		createStatus(job.head, 'pending', build_url, 'Testing Pull Request');
+		createStatus(job.head, config.user, pull.repo, 'pending', build_url, 'Testing Pull Request');
 	});
 
 	mergeatron.on('build.failed', function(job, pull, build_url) {
-		createStatus(job.head, 'failure', build_url, 'Build failed');
+		createStatus(job.head, config.user, pull.repo, 'failure', build_url, 'Build failed');
 	});
 
 	mergeatron.on('build.succeeded', function(job, pull, build_url) {
-		createStatus(job.head, 'success', build_url, 'Build succeeded');
+		createStatus(job.head, config.user, pull.repo, 'success', build_url, 'Build succeeded');
 	});
 
 	mergeatron.on('pull.inline_status', function(pull, sha, file, position, comment) {
 		GitHub.pullRequests.createComment({
 			user: config.user,
-			repo: config.repo,
+			repo: pull.repo,
 			number: pull.number,
 			body: comment,
 			commit_id: sha,
@@ -62,6 +62,7 @@ exports.init = function(config, mergeatron) {
 			return;
 		}
 
+		pull.repo = pull.base.repo.name;
 		if (config.skip_file_listing) {
 			pull.files = [];
 			mergeatron.emit('pull.found', pull);
@@ -77,7 +78,7 @@ exports.init = function(config, mergeatron) {
 		}
 
 		if (data.comment.body.indexOf('@' + config.auth.user + ' retest') == -1) {
-			GitHub.pullRequests.get({ 'user': config.user, 'repo': config.repo, 'number': data.issue.number }, function(error, pull) {
+			GitHub.pullRequests.get({ 'user': config.user, 'repo': data.repository.name, 'number': data.issue.number }, function(error, pull) {
 				if (error) {
 					console.log(error);
 					return;
@@ -90,7 +91,7 @@ exports.init = function(config, mergeatron) {
 	});
 
 	function checkFiles(pull) {
-		GitHub.pullRequests.getFiles({ 'user': config.user, 'repo': config.repo, 'number': pull.number }, function(err, files) {
+		GitHub.pullRequests.getFiles({ 'user': config.user, 'repo': pull.repo, 'number': pull.number }, function(err, files) {
 			if (err) {
 				console.log(err);
 				return;
@@ -193,7 +194,7 @@ exports.init = function(config, mergeatron) {
 				return;
 			}
 
-			GitHub.issues.getComments({ user: config.user, repo: config.repo, number: pull.number, per_page: 100 }, function(error, resp) {
+			GitHub.issues.getComments({ user: config.user, repo: pull.repo, number: pull.number, per_page: 100 }, function(error, resp) {
 				for (var i in resp) {
 					if (resp[i].created_at > item.updated_at && resp[i].body.indexOf('@' + config.auth.user + ' retest') != -1) {
 						mergeatron.emit('pull.processed', pull, pull.number, pull.head.sha, ssh_url, branch, pull.updated_at);
@@ -204,8 +205,15 @@ exports.init = function(config, mergeatron) {
 		});
 	}
 
-	function createStatus(sha, state, build_url, description) {
-		GitHub.statuses.create({ user: config.user, repo: config.repo, sha: sha, state: state, target_url: build_url, description: description });
+	function createStatus(sha, user, repo, state, build_url, description) {
+		GitHub.statuses.create({
+			user: user,
+			repo: repo,
+			sha: sha,
+			state: state,
+			target_url: build_url,
+			description: description
+		});
 	}
 
 	function setupServer() {
@@ -241,28 +249,34 @@ exports.init = function(config, mergeatron) {
 		async.parallel({
 			'github': function() {
 				var run_github = function() {
-					GitHub.pullRequests.getAll({ 'user': config.user, 'repo': config.repo, 'state': 'open' }, function(error, resp) {
-						if (error) {
-							console.log(error);
-							return;
-						}
-
-						for (var i in resp) {
-							var pull = resp[i],
-								number = pull.number;
-
-							if (!number || number == 'undefined') {
-								continue;
-							}
-
-							events.emit('pull_request', pull);
-						}
+					config.repos.forEach(function(repo) {
+						checkRepo(config.user, repo);
 					});
 
 					setTimeout(run_github, config.frequency);
 				};
 
 				run_github();
+			}
+		});
+	}
+
+	function checkRepo(user, repo) {
+		GitHub.pullRequests.getAll({ 'user': config.user, 'repo': repo, 'state': 'open' }, function(error, resp) {
+			if (error) {
+				console.log(error);
+				return;
+			}
+
+			for (var i in resp) {
+				var pull = resp[i],
+					number = pull.number;
+
+				if (!number || number == 'undefined') {
+					continue;
+				}
+
+				events.emit('pull_request', pull);
 			}
 		});
 	}

@@ -33,7 +33,13 @@ exports.init = function(config, mergeatron) {
 	});
 
 	mergeatron.on('pull.found', function(pull) {
-		if (!config.rules) {
+		var project = findProjectByRepo(pull.repo);
+
+		if (!project) {
+			return;
+		}
+
+		if (!project.rules) {
 			mergeatron.emit('pull.validated', pull);
 			return;
 		}
@@ -43,8 +49,8 @@ exports.init = function(config, mergeatron) {
 				continue;
 			}
 
-			for (var y in config.rules) {
-				if (pull.files[x].filename.match(config.rules[y])) {
+			for (var y in project.rules) {
+				if (pull.files[x].filename.match(project.rules[y])) {
 					mergeatron.emit('pull.validated', pull);
 					return;
 				}
@@ -56,12 +62,14 @@ exports.init = function(config, mergeatron) {
 	 * @todo Do we need to pass all these parameters, is just passing pull enough?
 	 */
 	function buildPull(pull, number, sha, ssh_url, branch, updated_at) {
+		var project = findProjectByRepo(pull.repo);
+
 		var job_id = uuid.v1(),
 			options = {
 				url: url.format({
 					protocol: config.protocol,
 					host: config.host,
-					pathname: '/job/' + config.project + '/buildWithParameters',
+					pathname: '/job/' + project.name + '/buildWithParameters',
 					query: {
 						token: config.token,
 						cause: 'Testing Pull Request: ' + number,
@@ -75,7 +83,7 @@ exports.init = function(config, mergeatron) {
 				method: 'GET'
 			};
 
-		if(config.user && config.pass){
+		if (config.user && config.pass) {
 			options.headers = {
 				authorization: 'Basic ' + (new Buffer(config.user + ":" + config.pass, 'ascii').toString('base64'))
 			};
@@ -98,11 +106,12 @@ exports.init = function(config, mergeatron) {
 
 	function checkJob(pull) {
 		var job = findUnfinishedJob(pull),
+			project = findProjectByRepo(pull.repo),
 			options = {
 				url: url.format({
 					protocol: config.protocol,
 					host: config.host,
-					pathname: '/job/' + config.project + '/api/json',
+					pathname: '/job/' + project.name + '/api/json',
 					query: {
 
 						tree: 'builds[number,url,actions[parameters[name,value]],building,result]'
@@ -149,11 +158,12 @@ exports.init = function(config, mergeatron) {
 	}
 
 	function processArtifacts(build, pull) {
-		var options = {
+		var project = findProjectByRepo(pull.repo),
+			options = {
 			url: url.format({
 				protocol: config.protocol,
 				host: config.host,
-				pathname: '/job/' + config.project + '/' + build.number + '/api/json',
+				pathname: '/job/' + project.name + '/' + build.number + '/api/json',
 				query: {
 					tree: 'artifacts[fileName,relativePath]'
 				}
@@ -181,5 +191,16 @@ exports.init = function(config, mergeatron) {
 				return pull.jobs[x];
 			}
 		}
+	}
+
+	function findProjectByRepo(repo) {
+		var found = null;
+		config.projects.forEach(function(project) {
+			if (repo == project.repo) {
+				found = project;
+			}
+		});
+
+		return found;
 	}
 };
