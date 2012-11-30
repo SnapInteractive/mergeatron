@@ -13,7 +13,7 @@ exports.config = {
 	plugin_dirs: [ './plugins/' ],
 	plugins: {
 		github: {
-			method: 'hooks',    // 'hooks' for webhooks or 'polling' to poll the REST api
+			method: 'hooks',    // 'hooks' for webhooks or 'polling' to poll the REST API
 			auth: {
 				user: 'username',
 				pass: 'password'
@@ -22,7 +22,13 @@ exports.config = {
 			repo: 'repo_name',
 			skip_file_listing: false,
 			frequency: 15000,    // only necessary if method is 'polling'
-			port: '8888'         // only necessary if method is 'hooks'
+			port: '8888',        // only necessary if method is 'hooks'
+			// optional. If running GitHub Enterprise this is the host/port to access the REST API.
+			// Can be if just using github.com.
+			api: {
+				host: 'ghe.example.com',
+				port: '1234'
+			}
 		},
 		jenkins:  {
 			token: 'token',
