@@ -45,6 +45,8 @@ Mergeatron comes with multiple different plugins you can opt to use. By default 
  * `github.repo` - The repo you want Mergeatron to keep an eye on.
  * `github.frequency` - The frequency, in milliseconds, with which to poll GitHub for new and updated Pull Requests. Be mindful of your [API rate limit](http://developer.github.com/v3/#rate-limiting) when setting this.
  * `github.port` - The port you want to allow GitHub to post to.
+ * `github.api.host` - Optional parameter to set the host for the GitHub REST API. This should only be needed if you're running GitHub Enterprise and can be excluded entirely otherwise.
+ * `github.api.port` - Optional parameter to set the port for the GitHub REST API. This should only be needed if you're running GitHub Enterprise and can be excluded entirely otherwise.
  * `phpcs.artifact` - The name of the artifact file that contains PHP Code Sniffer results. If no artifact with this name is found the plugin won't do anything.
 
 ## Setting Up GitHub
