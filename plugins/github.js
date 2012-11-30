@@ -1,3 +1,7 @@
+/**
+ * The GitHub integration plugin
+ * @module GitHub
+ */
 "use strict";
 
 var http = require('http'),
@@ -11,6 +15,13 @@ var http = require('http'),
 var allowed_ips = [ '127.0.0.1', '207.97.227.253', '50.57.128.197', '108.171.174.178' ],
 	allowed_events = [ 'pull_request', 'issue_comment' ];
 
+/**
+ * @class GitHub
+ * @param config {Object} The plugins configs
+ * @param mergeatron {Mergeatron} An instance of the main Mergeatron object
+ * @param events {Object} An EventDispatcher instance used when handling webhook events
+ * @constructor
+ */
 var GitHub = function(config, mergeatron, events) {
 	config.api = config.api || {};
 
@@ -30,6 +41,12 @@ var GitHub = function(config, mergeatron, events) {
 	});
 };
 
+/**
+ * Sets up the GitHub plugin. Depending on the selecting configs either a webserver
+ * will be setup for receiving webhook events or asynchronous polling will be setup.
+ *
+ * @method setup
+ */
 GitHub.prototype.setup = function() {
 	if (this.config.method === 'hooks') {
 		this.setupServer();
@@ -49,6 +66,13 @@ GitHub.prototype.setup = function() {
 	}
 };
 
+/**
+ * If webhooks are configured this will setup a server on the specified IP that
+ * will listen for events from GitHub. Only the configured events will be listened
+ * for and only the configured IPs will be listened to.
+ *
+ * @method setupServer
+ */
 GitHub.prototype.setupServer = function() {
 	var self = this;
 	http.createServer(function(request, response) {
@@ -79,6 +103,11 @@ GitHub.prototype.setupServer = function() {
 	}).listen(this.config.port);
 };
 
+/**
+ * Iterates over the configured list of repositories and uses the GitHub API to check each one for pull requests.
+ *
+ * @method checkRepos
+ */
 GitHub.prototype.checkRepos = function() {
 	var self = this;
 	this.config.repos.forEach(function(repo) {
@@ -102,6 +131,13 @@ GitHub.prototype.checkRepos = function() {
 	});
 };
 
+/**
+ * Uses the GitHub API to pull the list of files and diffs for the provided pull request.
+ * These will be parsed and saved on the pull object to be saved to the database later.
+ *
+ * @method checkFiles
+ * @param pull {Object}
+ */
 GitHub.prototype.checkFiles = function(pull) {
 	var self = this;
 	this.api.pullRequests.getFiles({ 'user': this.config.user, 'repo': pull.repo, 'number': pull.number }, function(err, files) {
@@ -168,6 +204,14 @@ GitHub.prototype.checkFiles = function(pull) {
 	});
 };
 
+/**
+ * Starts the process of processing a pull request. Will retrieve the pull request from the database or insert a new
+ * record for it if needed. The pull request is then checked to see if it should be processed or not and dispatches
+ * the appropriate event if so.
+ *
+ * @method processPull
+ * @param pull {Object}
+ */
 GitHub.prototype.processPull = function(pull) {
 	var self = this;
 	this.mergeatron.db.findPull(pull.number, function(error, item) {
@@ -223,6 +267,17 @@ GitHub.prototype.processPull = function(pull) {
 	});
 };
 
+/**
+ * Uses the GitHub API to create a Merge Status for a pull request.
+ *
+ * @method createStatus
+ * @param sha {String}
+ * @param user {String}
+ * @param repo {String}
+ * @param state {String}
+ * @param build_url {String}
+ * @param description {String}
+ */
 GitHub.prototype.createStatus = function(sha, user, repo, state, build_url, description) {
 	this.api.statuses.create({
 		user: user,
@@ -234,6 +289,16 @@ GitHub.prototype.createStatus = function(sha, user, repo, state, build_url, desc
 	});
 };
 
+/**
+ * Uses the GitHub API to create an inline comment on the diff of a pull request.
+ *
+ * @method createComment
+ * @param pull {Object}
+ * @param sha {String}
+ * @param file {String}
+ * @param position {String}
+ * @param comment {String}
+ */
 GitHub.prototype.createComment = function(pull, sha, file, position, comment) {
 	this.api.pullRequests.createComment({
 		user: this.config.user,
@@ -244,8 +309,15 @@ GitHub.prototype.createComment = function(pull, sha, file, position, comment) {
 		path: file,
 		position: position
 	});
-}
+};
 
+/**
+ * Receives a pull request at the very beginning of the process, either from a webhook event or from the REST API,
+ * and checks to make sure we care about it.
+ *
+ * @method handlePullRequest
+ * @param pull {Object}
+ */
 GitHub.prototype.handlePullRequest = function(pull) {
 	if (pull.action !== undefined && pull.action != 'synchronize' && pull.action != 'opened') {
 		return;
@@ -264,6 +336,13 @@ GitHub.prototype.handlePullRequest = function(pull) {
 	}
 };
 
+/**
+ * Receives an issue comment from a webhook event and checks to see if we need to worry about it. If so the
+ * associated pull request will be loaded via the REST API and sent on its way for processing.
+ *
+ * @method handleIssueComment
+ * @param comment {Object}
+ */
 GitHub.prototype.handleIssueComment = function(comment) {
 	// This event will pick up comments on issues and pull requests but we only care about pull requests
 	if (comment.issue.pull_request.html_url == null) {

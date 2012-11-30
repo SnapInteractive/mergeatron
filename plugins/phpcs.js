@@ -1,12 +1,32 @@
+/**
+ * The PHP Code Sniffer integration plugin
+ * @module PHPCS
+ */
 "use strict";
 
 var request = require('request');
 
+/**
+ * @class PhpCs
+ * @param config {Object} The plugins configs
+ * @param mergeatron {Mergeatron} An instance of the main Mergeatron object
+ * @constructor
+ */
 var PhpCs = function(config, mergeatron) {
 	this.config = config;
 	this.mergeatron = mergeatron;
 };
 
+/**
+ * Processes a PHPCS CSV file. Will determine if any of the entries within the file are for files
+ * that were modified as part of the provided pull request and are within the diffs for those files.
+ * An event will be dispatched for each violation.
+ *
+ * @method process
+ * @param build {String}
+ * @param pull {Object}
+ * @param artifact_url {String}
+ */
 PhpCs.prototype.process = function(build, pull, artifact_url) {
 	var self = this;
 	request({ url: artifact_url }, function(err, response) {
@@ -52,6 +72,13 @@ PhpCs.prototype.process = function(build, pull, artifact_url) {
 	});
 };
 
+/**
+ * Parses a PHPCS CSV file and returns the result as an array of objects.
+ *
+ * @method parseCsvFile
+ * @param data {String}
+ * @returns {Array}
+ */
 PhpCs.prototype.parseCsvFile = function(data) {
 	var iteration = 0,
 		header = [],

@@ -1,3 +1,7 @@
+/**
+ * The Jenkins integration plugin
+ * @module Jenkins
+ */
 "use strict";
 
 var request = require('request'),
@@ -5,11 +9,24 @@ var request = require('request'),
 	uuid = require('node-uuid'),
 	async = require('async');
 
+/**
+ * @class Jenkins
+ * @param config {Object} The plugins configs
+ * @param mergeatron {Mergeatron} An instance of the main Mergeatron object
+ * @constructor
+ */
 var Jenkins = function(config, mergeatron) {
 	this.config = config;
 	this.mergeatron = mergeatron;
 };
 
+/**
+ * Searches a pull requests jobs to find the unfinished one, if one exists.
+ *
+ * @method findUnfinishedJob
+ * @param pull {Object}
+ * @returns {Object}
+ */
 Jenkins.prototype.findUnfinishedJob = function(pull) {
 	for (var x in pull.jobs) {
 		if (pull.jobs[x].status != 'finished') {
@@ -18,6 +35,13 @@ Jenkins.prototype.findUnfinishedJob = function(pull) {
 	}
 };
 
+/**
+ * Searches through the configs to find the appropriate project for the provided repo.
+ *
+ * @method findProjectByRepo
+ * @param repo {String}
+ * @returns {Object}
+ */
 Jenkins.prototype.findProjectByRepo = function(repo) {
 	var found = null;
 	this.config.projects.forEach(function(project) {
@@ -29,6 +53,11 @@ Jenkins.prototype.findProjectByRepo = function(repo) {
 	return found;
 };
 
+/**
+ * Sets up an asynchronous job that polls the Jenkins API to look for jobs that are finished.
+ *
+ * @method setup
+ */
 Jenkins.prototype.setup = function() {
 	var self = this;
 	async.parallel({
@@ -55,6 +84,15 @@ Jenkins.prototype.setup = function() {
 };
 
 /**
+ * Uses the Jenkins REST API to trigger a new build for the provided pull request.
+ *
+ * @method buildPull
+ * @param pull {Object}
+ * @param number {String}
+ * @param sha {String}
+ * @param ssh_url {String}
+ * @param branch {String}
+ * @param updated_at {String}
  * @todo Do we need to pass all these parameters, is just passing pull enough?
  */
 Jenkins.prototype.buildPull = function(pull, number, sha, ssh_url, branch, updated_at) {
@@ -100,6 +138,14 @@ Jenkins.prototype.buildPull = function(pull, number, sha, ssh_url, branch, updat
 	});
 };
 
+/**
+ * Called when a new pull is being checked to see if it should be process. This method will iterate
+ * over the configured projects to find the right one and check that ones rules to see if a build should
+ * be triggered for it based on the files that were modified.
+ *
+ * @method pullFound
+ * @param pull {Object}
+ */
 Jenkins.prototype.pullFound = function(pull) {
 	var project = this.findProjectByRepo(pull.repo);
 
@@ -126,6 +172,14 @@ Jenkins.prototype.pullFound = function(pull) {
 	}
 };
 
+/**
+ * Uses the Jenkins REST API to check if the provided pull request has any jobs that recently finished. If so
+ * their status in the database is updated and events are triggered so other plugins can re-act to the completion
+ * of the job.
+ *
+ * @method checkJob
+ * @param pull {Object}
+ */
 Jenkins.prototype.checkJob = function(pull) {
 	var self = this,
 		job = this.findUnfinishedJob(pull),
@@ -179,6 +233,14 @@ Jenkins.prototype.checkJob = function(pull) {
 	});
 };
 
+/**
+ * Downloads the artifacts for a build and dispatches an event for each one. This lets other plugins parse and process
+ * results from the build however they like.
+ *
+ * @method processArtifacts
+ * @param build {String}
+ * @param pull {Object}
+ */
 Jenkins.prototype.processArtifacts = function(build, pull) {
 	var project = this.findProjectByRepo(pull.repo),
 		options = {
