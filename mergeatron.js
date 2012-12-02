@@ -5,6 +5,15 @@ var config = require('./config').config,
 	fs = require('fs'),
 	events = require('events');
 
+/**
+ * The main Mergeatron class that. This class contains a reference to the selected
+ * database.
+ *
+ * @class Mergeatron
+ * @module Mergeatron
+ * @param db {Object} Instance of the database accesor
+ * @constructor
+ */
 var Mergeatron = function(db) {
 	this.db = db;
 };
