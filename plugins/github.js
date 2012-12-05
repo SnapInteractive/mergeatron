@@ -372,15 +372,15 @@ exports.init = function(config, mergeatron) {
 	});
 
 	mergeatron.on('build.started', function(job, pull, build_url) {
-		github.createStatus(job.head, config.user, pull.repo, 'pending', build_url, 'Testing Pull Request');
+		github.createStatus(job.head, config.user, pull.repo, 'pending', build_url, 'Mergeatron Build Started');
 	});
 
 	mergeatron.on('build.failed', function(job, pull, build_url) {
-		github.createStatus(job.head, config.user, pull.repo, 'failure', build_url, 'Build failed');
+		github.createStatus(job.head, config.user, pull.repo, 'failure', build_url, 'Mergeatron Build Failed');
 	});
 
 	mergeatron.on('build.succeeded', function(job, pull, build_url) {
-		github.createStatus(job.head, config.user, pull.repo, 'success', build_url, 'Build succeeded');
+		github.createStatus(job.head, config.user, pull.repo, 'success', build_url, 'Mergeatron Build Succeeded');
 	});
 
 	mergeatron.on('pull.inline_status', function(pull, sha, file, position, comment) {
