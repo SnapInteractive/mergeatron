@@ -47,17 +47,19 @@
 <h2>Requirements</h2>
 
 <ul>
-<li><a href="http://www.mongodb.org/">MongoDB</a></li>
 <li><a href="http://nodejs.org/">Node.js</a></li>
 <li><a href="https://npmjs.org/">NPM</a></li>
+<li>
+<a href="http://www.mongodb.org/">MongoDB</a> - or - <a href="http://mysql.com">MySQL</a>
+</li>
 </ul><h2>Installation Instructions</h2>
 
-<pre><code>    git clone git@github.com:steves/mergeatron.git
+<div class="highlight"><pre>    git clone git@github.com:SnapInteractive/mergeatron.git
     npm install
 
     // Copy config.sample.js to config.js and update accordingly
     node mergeatron.js
-</code></pre>
+</pre></div>
 
 <h2>Configuring Mergeatron</h2>
 
@@ -65,7 +67,13 @@
 
 <ul>
 <li>
-<code>mongo</code> - This is the connection string to use for mongo. For more information on this see the <a href="https://github.com/gett/mongojs">mongojs</a> documentation.</li>
+<code>db</code> - This contains the database provider you wish to use and any connection information for it. For more information on the drivers user: <a href="https://github.com/gett/mongojs">mongojs</a>, <a href="https://npmjs.org/package/mysql">mysql</a>.</li>
+<li>
+<code>db.type</code> - Either "mongo" for MongoDB or "mysql" for MySQL..</li>
+<li>
+<code>db.auth</code> - An object containing <code>user</code>, <code>pass</code>, <code>host</code>, and <code>port</code> options for logging into the database. All must be provided.</li>
+<li>
+<code>db.database</code> - The name of the database that Mergeatron should use.</li>
 <li>
 <code>plugins_dir</code> - This is the directory where the plugins live. Chances are you won't need to change this.</li>
 </ul><p>Mergeatron comes with multiple different plugins you can opt to use. By default any plugin found in your <code>config.js</code> will be included and run. If you want to disable a certain plugin you can either remove it or add <code>enabled: false</code> to that plugins configuration.</p>
@@ -97,6 +105,10 @@
 <li>
 <code>github.port</code> - The port you want to allow GitHub to post to.</li>
 <li>
+<code>github.api.host</code> - Optional parameter to set the host for the GitHub REST API. This should only be needed if you're running GitHub Enterprise and can be excluded entirely otherwise.</li>
+<li>
+<code>github.api.port</code> - Optional parameter to set the port for the GitHub REST API. This should only be needed if you're running GitHub Enterprise and can be excluded entirely otherwise.</li>
+<li>
 <code>phpcs.artifact</code> - The name of the artifact file that contains PHP Code Sniffer results. If no artifact with this name is found the plugin won't do anything.</li>
 </ul><h2>Setting Up GitHub</h2>
 
@@ -125,26 +137,20 @@
 <li>Check the box labeled 'Execute concurrent builds if necessary'.</li>
 <li>Check the box labeled 'Trigger builds remotely (e.g., from scripts)' and enter the <code>jenkins.token</code> token you specified in your Mergeatron configs.</li>
 <li>Provide the following shell script as a build step:</li>
-</ul><div class="highlight"><pre>git reset --hard HEAD
+</ul><div class="highlight"><pre>git fetch origin
+git remote rm mergeatron <span class="o">||</span> <span class="nb">echo</span> <span class="s2">"No Mergeatron Remote"</span>
+git remote add -f mergeatron <span class="k">${</span><span class="nv">REPOSITORY_URL</span><span class="k">}</span>
 
-git remote <span class="nb">set</span>-url origin <span class="k">${</span><span class="nv">REPOSITORY_URL</span><span class="k">}</span>
-git fetch origin
-
-git checkout master
-git pull upstream master
-
-git checkout <span class="k">${</span><span class="nv">BRANCH_NAME</span><span class="k">}</span>
-git merge master
+git checkout mergeatron/<span class="k">${</span><span class="nv">BRANCH_NAME</span><span class="k">}</span>
+git merge origin/<span class="k">${</span><span class="nv">BASE_BRANCH_NAME</span><span class="k">}</span>
 git clean -fdx
 
-git remote prune origin
+git remote prune mergeatron
 </pre></div>
 
 <ul>
-<li>
-<p>Update the above shell script to have the proper references to your master branch. You'll need to manually ensure that <code>origin</code> and <code>upstream</code> are created.</p>
-
-<h2>Extending Mergeatron</h2>
+<li>Update the above shell script to have the proper references to your master branch. You'll need to manually ensure that <code>origin</code> and <code>upstream</code> are created.</li>
+</ul><h2>Extending Mergeatron</h2>
 
 <p>Mergeatron is built with extensibility in mind. To help achieve this it's been built around events instead of direct calls between plugins. This enables you to easily write any plugin you want that listens on the existing events and/or emits your own that others can use.</p>
 
@@ -155,31 +161,31 @@ git remote prune origin
 <p>Below is a very basic example:</p>
 
 <div class="highlight"><pre><span class="nx">exports</span><span class="p">.</span><span class="nx">init</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">config</span><span class="p">,</span> <span class="nx">mergeatron</span><span class="p">)</span> <span class="p">{</span>
-<span class="c1">// Do some stuff we want to execute once on startup/init</span>
+    <span class="c1">// Do some stuff we want to execute once on startup/init</span>
 
-<span class="nx">mergeatron</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'build.started'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">job_id</span><span class="p">,</span> <span class="nx">job</span><span class="p">,</span> <span class="nx">build_url</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">job_id</span> <span class="o">+</span> <span class="s1">' has started building!'</span><span class="p">);</span>
-<span class="p">});</span>
+    <span class="nx">mergeatron</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'build.started'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">job_id</span><span class="p">,</span> <span class="nx">job</span><span class="p">,</span> <span class="nx">build_url</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">job_id</span> <span class="o">+</span> <span class="s1">' has started building!'</span><span class="p">);</span>
+    <span class="p">});</span>
 <span class="p">}</span>
 </pre></div>
 
 <h2>Events</h2>
-</li>
-<li><p>''pull.found'' - This is the first event emitted in a builds life cycle. It allows any listening plugins to check the build to make sure it should be handled.</p></li>
-<li><p>''pull.validated'' - If a build should be acted upon this event will be emitted. It allows any listening plugins to setup the build for processing. This means persisting it to a temporary, or permenant, data store of their choice and doing any other setup work they need to.</p></li>
-<li><p>''pull.processed'' - Once a build has been pre-processed it is ready to be built. When that happens this event is emitted. Any listening plugins can start the build.</p></li>
-<li><p>''build.started'' - This event is emitted when the build has been started.</p></li>
-<li><p>''build.succeeded'' - This event is emitted when a build was successful.</p></li>
-<li><p>''build.failed'' - This event is emitted when a build has failed.</p></li>
-<li><p>''pull.inline_status'' - This event is emitted when a plugin is announcing that something was found on a specific line of a files diff within the build.</p></li>
-<li>
-<p>''build.artifact_found'' - This event is emitted once for each artifact found after the build has finished. Plugins receive the URL to the artifact and can download and act upon it if wanted.</p>
 
-<h2>Contributing</h2>
-</li>
-<li><p>Please use topic branches when submitting pull requests. Please don't submit PR's from master.</p></li>
-<li><p>Take care to follow the existing style. We have no formal style guide as of yet, but follow the idiomatic JS principle of: "All code in any code-base should look like a single person typed it, no matter how many people contributed."</p></li>
-<li><p>We use <code>grunt</code> to manage the build. Make sure you run <code>grunt</code> before submitting a pull request, as this will run jshint on the code. If you want continuous linting on file save, use <code>grunt watch</code>.</p></li>
+<ul>
+<li>''pull.found'' - This is the first event emitted in a builds life cycle. It allows any listening plugins to check the build to make sure it should be handled.</li>
+<li>''pull.validated'' - If a build should be acted upon this event will be emitted. It allows any listening plugins to setup the build for processing. This means persisting it to a temporary, or permenant, data store of their choice and doing any other setup work they need to.</li>
+<li>''pull.processed'' - Once a build has been pre-processed it is ready to be built. When that happens this event is emitted. Any listening plugins can start the build.</li>
+<li>''build.started'' - This event is emitted when the build has been started.</li>
+<li>''build.succeeded'' - This event is emitted when a build was successful.</li>
+<li>''build.failed'' - This event is emitted when a build has failed.</li>
+<li>''pull.inline_status'' - This event is emitted when a plugin is announcing that something was found on a specific line of a files diff within the build.</li>
+<li>''build.artifact_found'' - This event is emitted once for each artifact found after the build has finished. Plugins receive the URL to the artifact and can download and act upon it if wanted.</li>
+</ul><h2>Contributing</h2>
+
+<ul>
+<li>Please use topic branches when submitting pull requests. Please don't submit PR's from master.</li>
+<li>Take care to follow the existing style. We have no formal style guide as of yet, but follow the idiomatic JS principle of: "All code in any code-base should look like a single person typed it, no matter how many people contributed."</li>
+<li>We use <code>grunt</code> to manage the build. Make sure you run <code>grunt</code> before submitting a pull request, as this will run jshint on the code. If you want continuous linting on file save, use <code>grunt watch</code>.</li>
 </ul>
       </section>
 
