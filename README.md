@@ -34,7 +34,7 @@ Mergeatron comes with multiple different plugins you can opt to use. By default 
 
  * `jenkins.token` - This is a token you setup with your project. In your job configuration, within Jenkins, look for the option labeled 'Trigger builds remotely (e.g., from scripts)'.
  * `jenkins.protocol` - Either `http` or `https` depending on your setup.
- * `jenkins.host - The host of the URL, without backslash, to your Jenkins install.
+ * `jenkins.host` - The host of the URL, without backslash, to your Jenkins install.
  * `jenkins.project` - The name of the project within Jenkins you want to build.
  * `jenkins.rules` - An array of regular expressions that will be run against each file name in the pull request. A jenkins build will only be triggered if at least one file matches at least one rule.
  * `jenkins.frequency` - The frequency, in milliseconds, to poll Jenkins for updated build information. Increasing this will increase the time between when a build is started and Mergeatron knows it finished. Decreasing it too low can cause your Jenkins server to come under heavy load.
@@ -106,7 +106,7 @@ git remote prune origin
 # DO YOUR THING DOWN HERE
 ```
 
- * Update the above shell script to have the proper references to your master branch. You'll need to manually ensure that `origin` and `upstream` are created.
+ * Update the above shell script to have the proper references to your master branch.
 
 ## Extending Mergeatron
 
