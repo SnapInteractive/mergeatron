@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>REPOSITORY_URL</name>
+          <description>SSH Url to the target git repo</description>
+          <defaultValue>git@github.com:EXAMPLE/EXAMPLE.git</defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>BRANCH_NAME</name>
+          <description>The name of the branch to use</description>
+          <defaultValue>origin/master</defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>JOB</name>
+          <description>The unique ID of each job. Jenkins doesn&apos;t return their ID so we have to use this to search for the job later.</description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PULL</name>
+          <description>The id of the pull request</description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+    <de.pellepelster.jenkins.walldisplay.WallDisplayJobProperty/>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <authToken>CHANGME</authToken>
+  <triggers class="vector"/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>git status || (git clone git@github.com:EXAMPLE/MAIN.git . &amp;&amp; git remote add upstream git@github.com:EXAMPLE/MAIN.git)
+
+git reset --hard HEAD
+
+git remote set-url origin ${REPOSITORY_URL}
+git remote prune origin
+git fetch origin
+
+git checkout master
+git pull upstream master
+
+git checkout ${BRANCH_NAME}
+git merge master
+
+git submodule update --init
+
+git clean -fdx
+git remote prune origin
+
+# DO YOUR THING DOWN HERE</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>
