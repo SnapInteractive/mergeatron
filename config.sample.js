@@ -25,7 +25,7 @@ exports.config = {
 			frequency: 15000,    // only necessary if method is 'polling'
 			port: '8888',        // only necessary if method is 'hooks'
 			// optional. If running GitHub Enterprise this is the host/port to access the REST API.
-			// Can be if just using github.com.
+			// Can be left out if just using github.com.
 			api: {
 				host: 'ghe.example.com',
 				port: '1234'

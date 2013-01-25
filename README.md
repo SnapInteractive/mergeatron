@@ -35,14 +35,17 @@ Mergeatron comes with multiple different plugins you can opt to use. By default 
  * `jenkins.token` - This is a token you setup with your project. In your job configuration, within Jenkins, look for the option labeled 'Trigger builds remotely (e.g., from scripts)'.
  * `jenkins.protocol` - Either `http` or `https` depending on your setup.
  * `jenkins.host` - The host of the URL, without backslash, to your Jenkins install.
- * `jenkins.project` - The name of the project within Jenkins you want to build.
- * `jenkins.rules` - An array of regular expressions that will be run against each file name in the pull request. A jenkins build will only be triggered if at least one file matches at least one rule.
+ * `jenkins.projects` - The list of projects you want Jenkins to build
+ * `jenkins.projects.name` - The name of the project within Jenkins you want to build.
+ * `jenkins.projects.repo` - The name of the repo this project should build for.
+ * `jenkins.projects.rules` - An array of regular expressions that will be run against each file name in the pull request. A jenkins build will only be triggered if at least one file matches at least one rule.
  * `jenkins.frequency` - The frequency, in milliseconds, to poll Jenkins for updated build information. Increasing this will increase the time between when a build is started and Mergeatron knows it finished. Decreasing it too low can cause your Jenkins server to come under heavy load.
  * `github.method` - Either "hooks" or "polling". If "hooks" you'll need to configure the `github.port` option and make sure this port is available to GitHub to post to. If "polling" you'll need to configure `github.frequency` for how often to poll their REST API.
  * `github.auth.user` - The username of the GitHub user Mergeatron will be logging in, and posting, as. This user must have visibility to your repos Pull Requests.
  * `github.auth.pass` - The password for the GitHub user Mergeatron will be using.
  * `github.user` - The user whose GitHub repo Mergeatron will be checking for Pull Requests. Does not need to be the same as the `github.auth.user` user.
- * `github.repo` - The repo you want Mergeatron to keep an eye on.
+ * `github.repos` - The list of repositories you want Mergeatron to keep an eye on.
+ * `github.skip_file_listing` - A boolean flag indicating whether or not Mergeatron should fetch the files modified and diffs for every pull request.
  * `github.retry_whitelist` - An optional list of GitHub users who are able to trigger retries for builds. Exclude if everyone is allowed to.
  * `github.frequency` - The frequency, in milliseconds, with which to poll GitHub for new and updated Pull Requests. Be mindful of your [API rate limit](http://developer.github.com/v3/#rate-limiting) when setting this.
  * `github.port` - The port you want to allow GitHub to post to.
