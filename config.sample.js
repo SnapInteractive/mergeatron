@@ -20,6 +20,7 @@ exports.config = {
 			},
 			user: 'user-to-watch',
 			repos: [ 'repo_name' ],
+			retry_whitelist: [ 'user', 'user2' ],    // optional whitelist of those able to trigger retries
 			skip_file_listing: false,
 			frequency: 15000,    // only necessary if method is 'polling'
 			port: '8888',        // only necessary if method is 'hooks'

@@ -120,7 +120,6 @@ GitHub.prototype.checkRepos = function() {
 			for (var i in resp) {
 				var pull = resp[i],
 					number = pull.number;
-
 				if (!number || number == 'undefined') {
 					continue;
 				}
@@ -258,7 +257,20 @@ GitHub.prototype.processPull = function(pull) {
 			per_page: 100
 		}, function(error, resp) {
 			for (var i in resp) {
-				if (resp[i].created_at > item.updated_at && resp[i].body.indexOf('@' + self.config.auth.user + ' retest') != -1) {
+				if (i == 'meta') {
+					continue
+				}
+
+				var comment = resp[i];
+				if (
+					self.config.retry_whitelist
+					&& self.config.retry_whitelist.indexOf(comment.user.login) == -1
+					&& comment.user.login != pull.head.user.login
+				) {
+					continue;
+				}
+
+				if (comment.created_at > item.updated_at && comment.body.indexOf('@' + self.config.auth.user + ' retest') != -1) {
 					self.mergeatron.emit('pull.processed', pull, pull.number, pull.head.sha, ssh_url, branch, pull.updated_at);
 					return;
 				}

@@ -43,6 +43,7 @@ Mergeatron comes with multiple different plugins you can opt to use. By default 
  * `github.auth.pass` - The password for the GitHub user Mergeatron will be using.
  * `github.user` - The user whose GitHub repo Mergeatron will be checking for Pull Requests. Does not need to be the same as the `github.auth.user` user.
  * `github.repo` - The repo you want Mergeatron to keep an eye on.
+ * `github.retry_whitelist` - An optional list of GitHub users who are able to trigger retries for builds. Exclude if everyone is allowed to.
  * `github.frequency` - The frequency, in milliseconds, with which to poll GitHub for new and updated Pull Requests. Be mindful of your [API rate limit](http://developer.github.com/v3/#rate-limiting) when setting this.
  * `github.port` - The port you want to allow GitHub to post to.
  * `github.api.host` - Optional parameter to set the host for the GitHub REST API. This should only be needed if you're running GitHub Enterprise and can be excluded entirely otherwise.
