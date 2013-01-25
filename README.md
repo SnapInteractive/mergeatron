@@ -61,8 +61,19 @@ To configure your setup for webhooks you need to set `github.method` to "hooks" 
 
 ## Configuring Jenkins
 
-To configure Jenkins you will need to make sure you have the appropriate git plugin installed. I'm assuming you already know how to do that and already have it up and running successfully. Once you do follow the below steps.
+To configure Jenkins you will need to make sure you have the appropriate git plugin installed. I'm assuming you already know how to do that and already have it up and running successfully. Once you do, follow the below steps.
 
+#### Use the sample  - sample/JenkinsSampleJob/config.xml
+* Create a directory in your jenkins install, under the jobs dir, with whatever you'd like the job to be called.
+* Copy the file sample/JenkinsSampleJob/config.xml to that directory.
+* Reload the files from the disk / Restart jenkins
+* Edit the following fields to your values:
+    * Auth token
+    * REPOSITORY_URL
+    * Shell script to fix the Repo url's.
+    * Shell to do whatever you'd like it to do.
+
+#### Manual version
  * Check the box labeled 'This build is parameterized' and create the following string parameters:
   * REPOSITORY_URL - SSH Url to the git repo (default: git@github.com:`github.user/`github.repo`.git)
   * BRANCH_NAME - The name of the branch to use (default: origin/master)
@@ -73,15 +84,26 @@ To configure Jenkins you will need to make sure you have the appropriate git plu
  * Provide the following shell script as a build step:
 
 ```shell
+git status || (git clone git@github.com:EXAMPLE/MAIN.git . && git remote add upstream git@github.com:EXAMPLE/MAIN.git)
+
+git reset --hard HEAD
+
+git remote set-url origin ${REPOSITORY_URL}
+git remote prune origin
 git fetch origin
-git remote rm mergeatron || echo "No Mergeatron Remote"
-git remote add -f mergeatron ${REPOSITORY_URL}
 
-git checkout mergeatron/${BRANCH_NAME}
-git merge origin/${BASE_BRANCH_NAME}
+git checkout master
+git pull upstream master
+
+git checkout ${BRANCH_NAME}
+git merge master
+
+git submodule update --init
+
 git clean -fdx
+git remote prune origin
 
-git remote prune mergeatron
+# DO YOUR THING DOWN HERE
 ```
 
  * Update the above shell script to have the proper references to your master branch. You'll need to manually ensure that `origin` and `upstream` are created.
