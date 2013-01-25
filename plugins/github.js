@@ -120,11 +120,21 @@ GitHub.prototype.checkRepos = function() {
 			for (var i in resp) {
 				var pull = resp[i],
 					number = pull.number;
+
 				if (!number || number == 'undefined') {
 					continue;
 				}
 
-				self.events.emit('pull_request', pull);
+				// Currently the GitHub API doesn't provide the same information for polling as
+				// it does when requesting a single, specific, pull request. So we have to
+				self.api.pullRequests.get({ 'user': self.config.user, 'repo': repo, 'number': number }, function(error, pull) {
+					if (error) {
+						console.log(error);
+						return;
+					}
+
+					self.events.emit('pull_request', pull);
+				});
 			}
 		});
 	});
@@ -332,6 +342,22 @@ GitHub.prototype.createComment = function(pull, sha, file, position, comment) {
  */
 GitHub.prototype.handlePullRequest = function(pull) {
 	if (pull.action !== undefined && pull.action != 'synchronize' && pull.action != 'opened') {
+		return;
+	}
+
+	// Check if this came through a webhooks setup
+	if (pull.action !== undefined) {
+		if (pull.action != 'synchronize' && pull.action != 'opened') {
+			return;
+		}
+
+		pull = pull.pull_request;
+	}
+
+	// During testing there were cases where the mergeable flag was null when using webhooks.
+	// In that case we want to allow the build to be attempted. We only want to prevent it when
+	// the mergeable flag is explicitly set to false.
+	if (pull.mergeable !== undefined && pull.mergeable === false) {
 		return;
 	}
 
