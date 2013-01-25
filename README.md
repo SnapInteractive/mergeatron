@@ -29,6 +29,7 @@ To configure Mergeatron copy the `config.sample.js` file to `config.js` in the s
  * `db.auth` - An object containing `user`, `pass`, `host`, and `port` options for logging into the database. All must be provided.
  * `db.database` - The name of the database that Mergeatron should use.
  * `plugins_dir` - This is the directory where the plugins live. Chances are you won't need to change this.
+ * `log_level` - The level of logging you want to be printed to the console.
 
 Mergeatron comes with multiple different plugins you can opt to use. By default any plugin found in your `config.js` will be included and run. If you want to disable a certain plugin you can either remove it or add `enabled: false` to that plugins configuration.
 

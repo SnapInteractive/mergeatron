@@ -28,6 +28,8 @@ var PhpCs = function(config, mergeatron) {
  * @param artifact_url {String}
  */
 PhpCs.prototype.process = function(build, pull, artifact_url) {
+	this.mergeatron.log.debug('Attempting to download PHPCS artifact', { url: artifact_url });
+
 	var self = this;
 	request({ url: artifact_url }, function(err, response) {
 		if (err) {

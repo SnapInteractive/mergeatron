@@ -3,7 +3,8 @@
 var config = require('./config').config,
 	db =  require('./db').init(),
 	fs = require('fs'),
-	events = require('events');
+	events = require('events'),
+	winston = require('winston');
 
 /**
  * The main Mergeatron class that. This class contains a reference to the selected
@@ -14,18 +15,26 @@ var config = require('./config').config,
  * @param db {Object} Instance of the database accesor
  * @constructor
  */
-var Mergeatron = function(db) {
+var Mergeatron = function(db, config) {
 	this.db = db;
+	this.log = new (winston.Logger)({
+		transports: [
+			new (winston.transports.Console)({ level: config.log_level })
+		]
+	});
+
+	this.log.cli();
 };
 
 Mergeatron.prototype = new events.EventEmitter();
-var mergeatron = new Mergeatron(db);
+var mergeatron = new Mergeatron(db, config);
+
 
 config.plugin_dirs.forEach(function(dir) {
 	fs.readdir(dir, function(err, files) {
 		if (err) {
-			console.log(err);
-			return;
+			mergeatron.log.error(err);
+			process.exit(1);
 		}
 
 		for (var i = 0, l = files.length; i < l; i++) {
@@ -37,7 +46,7 @@ config.plugin_dirs.forEach(function(dir) {
 				break;
 			}
 
-			console.log('Loading plugin: ' + pluginName);
+			mergeatron.log.info('Loading plugin: ' + pluginName);
 
 			if (config.plugins && config.plugins[pluginName]) {
 				conf = config.plugins[pluginName];
@@ -46,7 +55,7 @@ config.plugin_dirs.forEach(function(dir) {
 			if (conf.enabled === undefined || conf.enabled) {
 				require(filename).init(conf, mergeatron);
 			} else {
-				console.log('Not loading disabled plugin ' + pluginName);
+				mergeatron.log.info('Not loading disabled plugin ' + pluginName);
 			}
 		}
 	});

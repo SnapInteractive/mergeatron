@@ -10,6 +10,7 @@ exports.config = {
 		},
 		database: 'mergeatron'
 	},
+	log_level: 'info',
 	plugin_dirs: [ './plugins/' ],
 	plugins: {
 		github: {
