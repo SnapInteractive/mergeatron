@@ -34,7 +34,7 @@ Mergeatron comes with multiple different plugins you can opt to use. By default 
 
  * `jenkins.token` - This is a token you setup with your project. In your job configuration, within Jenkins, look for the option labeled 'Trigger builds remotely (e.g., from scripts)'.
  * `jenkins.protocol` - Either `http` or `https` depending on your setup.
- * `jenkins.host - The host of the URL, without backslash, to your Jenkins install.
+ * `jenkins.host` - The host of the URL, without backslash, to your Jenkins install.
  * `jenkins.project` - The name of the project within Jenkins you want to build.
  * `jenkins.rules` - An array of regular expressions that will be run against each file name in the pull request. A jenkins build will only be triggered if at least one file matches at least one rule.
  * `jenkins.frequency` - The frequency, in milliseconds, to poll Jenkins for updated build information. Increasing this will increase the time between when a build is started and Mergeatron knows it finished. Decreasing it too low can cause your Jenkins server to come under heavy load.
@@ -61,8 +61,19 @@ To configure your setup for webhooks you need to set `github.method` to "hooks" 
 
 ## Configuring Jenkins
 
-To configure Jenkins you will need to make sure you have the appropriate git plugin installed. I'm assuming you already know how to do that and already have it up and running successfully. Once you do follow the below steps.
+To configure Jenkins you will need to make sure you have the appropriate git plugin installed. I'm assuming you already know how to do that and already have it up and running successfully. Once you do, follow the below steps.
 
+#### Use the sample  - sample/JenkinsSampleJob/config.xml
+* Create a directory in your jenkins install, under the jobs dir, with whatever you'd like the job to be called.
+* Copy the file sample/JenkinsSampleJob/config.xml to that directory.
+* Reload the files from the disk / Restart jenkins
+* Edit the following fields to your values:
+    * Auth token
+    * REPOSITORY_URL
+    * Shell script to fix the Repo url's.
+    * Shell to do whatever you'd like it to do.
+
+#### Manual version
  * Check the box labeled 'This build is parameterized' and create the following string parameters:
   * REPOSITORY_URL - SSH Url to the git repo (default: git@github.com:`github.user/`github.repo`.git)
   * BRANCH_NAME - The name of the branch to use (default: origin/master)
@@ -73,18 +84,29 @@ To configure Jenkins you will need to make sure you have the appropriate git plu
  * Provide the following shell script as a build step:
 
 ```shell
+git status || (git clone git@github.com:EXAMPLE/MAIN.git . && git remote add upstream git@github.com:EXAMPLE/MAIN.git)
+
+git reset --hard HEAD
+
+git remote set-url origin ${REPOSITORY_URL}
+git remote prune origin
 git fetch origin
-git remote rm mergeatron || echo "No Mergeatron Remote"
-git remote add -f mergeatron ${REPOSITORY_URL}
 
-git checkout mergeatron/${BRANCH_NAME}
-git merge origin/${BASE_BRANCH_NAME}
+git checkout master
+git pull upstream master
+
+git checkout ${BRANCH_NAME}
+git merge master
+
+git submodule update --init
+
 git clean -fdx
+git remote prune origin
 
-git remote prune mergeatron
+# DO YOUR THING DOWN HERE
 ```
 
- * Update the above shell script to have the proper references to your master branch. You'll need to manually ensure that `origin` and `upstream` are created.
+ * Update the above shell script to have the proper references to your master branch.
 
 ## Extending Mergeatron
 
