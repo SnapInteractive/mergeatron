@@ -104,7 +104,7 @@ Jenkins.prototype.buildPull = function(pull, number, sha, ssh_url, branch, updat
 				host: this.config.host,
 				pathname: '/job/' + project.name + '/buildWithParameters',
 				query: {
-					token: this.config.token,
+					token: project.token,
 					cause: 'Testing Pull Request: ' + number,
 					REPOSITORY_URL: ssh_url,
 					BRANCH_NAME: branch,
@@ -139,7 +139,7 @@ Jenkins.prototype.buildPull = function(pull, number, sha, ssh_url, branch, updat
 };
 
 /**
- * Called when a new pull is being checked to see if it should be process. This method will iterate
+ * Called when a new pull is being checked to see if it should be processed. This method will iterate
  * over the configured projects to find the right one and check that ones rules to see if a build should
  * be triggered for it based on the files that were modified.
  *

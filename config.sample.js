@@ -32,7 +32,6 @@ exports.config = {
 			}
 		},
 		jenkins:  {
-			token: 'token',
 			user: false,
 			pass: false,
 			protocol: 'http',
@@ -40,6 +39,7 @@ exports.config = {
 			projects: [{
 				name: 'project_name',
 				repo: 'repo_name',
+				token: 'token',
 				rules: [ new RegExp(/.php/g) ]
 			}],
 			frequency: 2000
