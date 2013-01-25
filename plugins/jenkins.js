@@ -225,6 +225,9 @@ Jenkins.prototype.checkJob = function(pull) {
 							self.mergeatron.emit('build.succeeded', job, pull, build.url);
 
 							self.processArtifacts(build, pull);
+						} else if (build.result == 'ABORTED') {
+							self.mergeatron.db.updateJobStatus(job.id, 'finished');
+							self.mergeatron.emit('build.aborted', job, pull, build.url);
 						}
 					}
 				}
