@@ -53,6 +53,8 @@ Mergeatron comes with multiple different plugins you can opt to use. By default 
  * `github.api.host` - Optional parameter to set the host for the GitHub REST API. This should only be needed if you're running GitHub Enterprise and can be excluded entirely otherwise.
  * `github.api.port` - Optional parameter to set the port for the GitHub REST API. This should only be needed if you're running GitHub Enterprise and can be excluded entirely otherwise.
  * `phpcs.artifact` - The name of the artifact file that contains PHP Code Sniffer results. If no artifact with this name is found the plugin won't do anything.
+ * `phpunit.artifact` - The name of the artifact file that contains PHPUnit results. Currently Mergeatron assumes the results are in junit format.
+ * `phpunit.failure_limit` - The maximum number of verbose error messages to display in the failure comment.
 
 ## Setting Up GitHub
 
@@ -135,14 +137,14 @@ exports.init = function(config, mergeatron) {
 
 ## Events
 
- * ''pull.found'' - This is the first event emitted in a builds life cycle. It allows any listening plugins to check the build to make sure it should be handled.
- * ''pull.validated'' - If a build should be acted upon this event will be emitted. It allows any listening plugins to setup the build for processing. This means persisting it to a temporary, or permenant, data store of their choice and doing any other setup work they need to.
- * ''pull.processed'' - Once a build has been pre-processed it is ready to be built. When that happens this event is emitted. Any listening plugins can start the build.
- * ''build.started'' - This event is emitted when the build has been started.
- * ''build.succeeded'' - This event is emitted when a build was successful.
- * ''build.failed'' - This event is emitted when a build has failed.
- * ''pull.inline_status'' - This event is emitted when a plugin is announcing that something was found on a specific line of a files diff within the build.
- * ''build.artifact_found'' - This event is emitted once for each artifact found after the build has finished. Plugins receive the URL to the artifact and can download and act upon it if wanted.
+ * `pull.found` - This is the first event emitted in a builds life cycle. It allows any listening plugins to check the build to make sure it should be handled.
+ * `pull.validated` - If a build should be acted upon this event will be emitted. It allows any listening plugins to setup the build for processing. This means persisting it to a temporary, or permenant, data store of their choice and doing any other setup work they need to.
+ * `pull.processed` - Once a build has been pre-processed it is ready to be built. When that happens this event is emitted. Any listening plugins can start the build.
+ * `build.started` - This event is emitted when the build has been started.
+ * `build.succeeded` - This event is emitted when a build was successful.
+ * `build.failed` - This event is emitted when a build has failed.
+ * `pull.inline_status` - This event is emitted when a plugin is announcing that something was found on a specific line of a files diff within the build.
+ * `build.artifact_found` - This event is emitted once for each artifact found after the build has finished. Plugins receive the URL to the artifact and can download and act upon it if wanted.
 
 ## Contributing
 

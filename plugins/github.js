@@ -333,15 +333,24 @@ GitHub.prototype.createStatus = function(sha, user, repo, state, build_url, desc
  * @param comment {String}
  */
 GitHub.prototype.createComment = function(pull, sha, file, position, comment) {
-	this.api.pullRequests.createComment({
-		user: this.config.user,
-		repo: pull.repo,
-		number: pull.number,
-		body: comment,
-		commit_id: sha,
-		path: file,
-		position: position
-	});
+	if (!file && !position && !comment) {
+		this.api.issues.createComment({
+			user: this.config.user,
+			repo: pull.repo,
+			number: pull.number,
+			body: sha
+		});
+	} else {
+		this.api.pullRequests.createComment({
+			user: this.config.user,
+			repo: pull.repo,
+			number: pull.number,
+			body: comment,
+			commit_id: sha,
+			path: file,
+			position: position
+		});
+	}
 };
 
 /**
@@ -435,6 +444,10 @@ exports.init = function(config, mergeatron) {
 
 	mergeatron.on('pull.inline_status', function(pull, sha, file, position, comment) {
 		github.createComment(pull, sha, file, position, comment) ;
+	});
+
+	mergeatron.on('pull.status', function(pull, comment) {
+		github.createComment(pull, comment);
 	});
 
 	events.on('pull_request', function(pull) {
