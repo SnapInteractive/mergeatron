@@ -46,7 +46,13 @@ exports.config = {
 			frequency: 2000
 		},
 		phpcs: {
+			enabled: false,
 			artifact: 'artifacts/phpcs.csv'
+		},
+		phpunit: {
+			enabled: false,
+			artifact: 'artifacts/junit.xml',
+			failure_limit: 3
 		}
 	}
 };
