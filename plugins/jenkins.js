@@ -202,6 +202,12 @@ Jenkins.prototype.checkJob = function(pull) {
 			json: true
 		};
 
+	if (this.config.user && this.config.pass) {
+		options.headers = {
+			authorization: 'Basic ' + (new Buffer(this.config.user + ":" + this.config.pass, 'ascii').toString('base64'))
+		};
+	}
+
 	request(options, function(error, response) {
 		if (error) {
 			self.mergeatron.log.error('could not connect to jenkins, there seems to be a connectivity issue!');
@@ -263,6 +269,12 @@ Jenkins.prototype.processArtifacts = function(build, pull) {
 		}),
 		json: true
 	};
+
+	if (this.config.user && this.config.pass) {
+		options.headers = {
+			authorization: 'Basic ' + (new Buffer(this.config.user + ":" + this.config.pass, 'ascii').toString('base64'))
+		};
+	}
 
 	var self = this;
 	request(options, function(err, response) {
