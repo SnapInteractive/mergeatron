@@ -6,7 +6,7 @@ exports.config = {
 			user: 'username',
 			pass: 'password',
 			host: 'localhost',
-			port: 3306
+			port: 27017
 		},
 		database: 'mergeatron'
 	},
