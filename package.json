@@ -1,5 +1,5 @@
 {
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"name": "mergeatron",
 	"description": "A helpful PR monitor that runs jenkins builds when Pull Requests are created and updated",
 	"author": "SNAP Interactive, Inc.",

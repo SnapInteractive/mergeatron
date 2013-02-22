@@ -15,7 +15,15 @@ Mergeatron is intended to assist with reviewing Pull Requests by providing, at a
 ```shell
 	git clone git@github.com:SnapInteractive/mergeatron.git
 	npm install
+```
 
+OR
+
+```shell
+	npm install mergeatron
+```
+
+```shell
 	// Copy config.sample.js to config.js and update accordingly
 	node mergeatron.js
 ```
@@ -93,22 +101,18 @@ To configure Jenkins you will need to make sure you have the appropriate git plu
 ```shell
 git status || (git clone git@github.com:EXAMPLE/MAIN.git . && git remote add upstream git@github.com:EXAMPLE/MAIN.git)
 
+git clean -fdx
 git reset --hard HEAD
+
+git fetch upstream
+git checkout upstream/master
 
 git remote set-url origin ${REPOSITORY_URL}
 git remote prune origin
 git fetch origin
-
-git checkout master
-git pull upstream master
-
-git checkout ${BRANCH_NAME}
-git merge master
+git merge origin/${BRANCH_NAME}
 
 git submodule update --init
-
-git clean -fdx
-git remote prune origin
 
 # DO YOUR THING DOWN HERE
 ```
