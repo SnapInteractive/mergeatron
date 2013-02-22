@@ -143,6 +143,7 @@ exports.init = function(config, mergeatron) {
 	var phpunit = new PhpUnit(config, mergeatron);
 
 	mergeatron.on('build.artifact_found', function (build, pull, artifact) {
+		mergeatron.log.debug('PHPUnit checking artifact', { config: config.artifact, path: artifact.relativePath });
 		if (artifact.relativePath == config.artifact) {
 			mergeatron.emit('build.download_artifact', build, pull, artifact);
 		}

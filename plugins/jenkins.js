@@ -288,6 +288,8 @@ Jenkins.prototype.processArtifacts = function(build, pull) {
 		var artifacts = response.body.artifacts;
 		for (var i in artifacts) {
 			artifacts[i].url = build.url + 'artifact/' + artifacts[i].relativePath;
+
+			self.mergeatron.log.debug('Found artifact for build', { build: build.number, url: artifacts[i].url });
 			self.mergeatron.emit('build.artifact_found', build, pull, artifacts[i]);
 		}
 	});

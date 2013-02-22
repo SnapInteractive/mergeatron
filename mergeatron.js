@@ -43,7 +43,7 @@ config.plugin_dirs.forEach(function(dir) {
 				conf = { enabled: true };
 
 			if (!filename.match(/\.js$/)) {
-				break;
+				continue;
 			}
 
 			mergeatron.log.info('Loading plugin: ' + pluginName);
