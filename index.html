@@ -56,8 +56,14 @@
 
 <div class="highlight"><pre>    git clone git@github.com:SnapInteractive/mergeatron.git
     npm install
+</pre></div>
 
-    // Copy config.sample.js to config.js and update accordingly
+<p>OR</p>
+
+<div class="highlight"><pre>    npm install mergeatron
+</pre></div>
+
+<div class="highlight"><pre>    // Copy config.sample.js to config.js and update accordingly
     node mergeatron.js
 </pre></div>
 
@@ -76,18 +82,25 @@
 <code>db.database</code> - The name of the database that Mergeatron should use.</li>
 <li>
 <code>plugins_dir</code> - This is the directory where the plugins live. Chances are you won't need to change this.</li>
+<li>
+<code>log_level</code> - The level of logging you want to be printed to the console.</li>
 </ul><p>Mergeatron comes with multiple different plugins you can opt to use. By default any plugin found in your <code>config.js</code> will be included and run. If you want to disable a certain plugin you can either remove it or add <code>enabled: false</code> to that plugins configuration.</p>
 
 <ul>
 <li>
-<code>jenkins.token</code> - This is a token you setup with your project. In your job configuration, within Jenkins, look for the option labeled 'Trigger builds remotely (e.g., from scripts)'.</li>
-<li>
 <code>jenkins.protocol</code> - Either <code>http</code> or <code>https</code> depending on your setup.</li>
-<li>`jenkins.host - The host of the URL, without backslash, to your Jenkins install.</li>
 <li>
-<code>jenkins.project</code> - The name of the project within Jenkins you want to build.</li>
+<code>jenkins.host</code> - The host of the URL, without backslash, to your Jenkins install.</li>
 <li>
-<code>jenkins.rules</code> - An array of regular expressions that will be run against each file name in the pull request. A jenkins build will only be triggered if at least one file matches at least one rule.</li>
+<code>jenkins.projects</code> - The list of projects you want Jenkins to build</li>
+<li>
+<code>jenkins.projects.name</code> - The name of the project within Jenkins you want to build.</li>
+<li>
+<code>jenkins.projects.token</code> - This is a token you setup with your project. In your job configuration, within Jenkins, look for the option labeled 'Trigger builds remotely (e.g., from scripts)'.</li>
+<li>
+<code>jenkins.projects.repo</code> - The name of the repo this project should build for.</li>
+<li>
+<code>jenkins.projects.rules</code> - An array of regular expressions that will be run against each file name in the pull request. A jenkins build will only be triggered if at least one file matches at least one rule.</li>
 <li>
 <code>jenkins.frequency</code> - The frequency, in milliseconds, to poll Jenkins for updated build information. Increasing this will increase the time between when a build is started and Mergeatron knows it finished. Decreasing it too low can cause your Jenkins server to come under heavy load.</li>
 <li>
@@ -99,7 +112,11 @@
 <li>
 <code>github.user</code> - The user whose GitHub repo Mergeatron will be checking for Pull Requests. Does not need to be the same as the <code>github.auth.user</code> user.</li>
 <li>
-<code>github.repo</code> - The repo you want Mergeatron to keep an eye on.</li>
+<code>github.repos</code> - The list of repositories you want Mergeatron to keep an eye on.</li>
+<li>
+<code>github.skip_file_listing</code> - A boolean flag indicating whether or not Mergeatron should fetch the files modified and diffs for every pull request.</li>
+<li>
+<code>github.retry_whitelist</code> - An optional list of GitHub users who are able to trigger retries for builds. Exclude if everyone is allowed to.</li>
 <li>
 <code>github.frequency</code> - The frequency, in milliseconds, with which to poll GitHub for new and updated Pull Requests. Be mindful of your <a href="http://developer.github.com/v3/#rate-limiting">API rate limit</a> when setting this.</li>
 <li>
@@ -110,6 +127,10 @@
 <code>github.api.port</code> - Optional parameter to set the port for the GitHub REST API. This should only be needed if you're running GitHub Enterprise and can be excluded entirely otherwise.</li>
 <li>
 <code>phpcs.artifact</code> - The name of the artifact file that contains PHP Code Sniffer results. If no artifact with this name is found the plugin won't do anything.</li>
+<li>
+<code>phpunit.artifact</code> - The name of the artifact file that contains PHPUnit results. Currently Mergeatron assumes the results are in junit format.</li>
+<li>
+<code>phpunit.failure_limit</code> - The maximum number of verbose error messages to display in the failure comment.</li>
 </ul><h2>Setting Up GitHub</h2>
 
 <p>There are two ways you can use the GitHub plugin. You can either have it poll GitHub's REST API periodically looking for changes. The downside to this approach is that it's very inefficienct, especially if you have a low volume of Pull Requests or if pull requests can sit for a while before being merged or closed. You also run into issues with rate limiting if you have too much activity or poll too frequently.</p>
@@ -122,7 +143,24 @@
 
 <h2>Configuring Jenkins</h2>
 
-<p>To configure Jenkins you will need to make sure you have the appropriate git plugin installed. I'm assuming you already know how to do that and already have it up and running successfully. Once you do follow the below steps.</p>
+<p>To configure Jenkins you will need to make sure you have the appropriate git plugin installed. I'm assuming you already know how to do that and already have it up and running successfully. Once you do, follow the below steps.</p>
+
+<h4>Use the sample  - sample/JenkinsSampleJob/config.xml</h4>
+
+<ul>
+<li>Create a directory in your jenkins install, under the jobs dir, with whatever you'd like the job to be called.</li>
+<li>Copy the file sample/JenkinsSampleJob/config.xml to that directory.</li>
+<li>Reload the files from the disk / Restart jenkins</li>
+<li>Edit the following fields to your values:
+
+<ul>
+<li>Auth token</li>
+<li>REPOSITORY_URL</li>
+<li>Shell script to fix the Repo url's.</li>
+<li>Shell to do whatever you'd like it to do.</li>
+</ul>
+</li>
+</ul><h4>Manual version</h4>
 
 <ul>
 <li>Check the box labeled 'This build is parameterized' and create the following string parameters:
@@ -137,19 +175,26 @@
 <li>Check the box labeled 'Execute concurrent builds if necessary'.</li>
 <li>Check the box labeled 'Trigger builds remotely (e.g., from scripts)' and enter the <code>jenkins.token</code> token you specified in your Mergeatron configs.</li>
 <li>Provide the following shell script as a build step:</li>
-</ul><div class="highlight"><pre>git fetch origin
-git remote rm mergeatron <span class="o">||</span> <span class="nb">echo</span> <span class="s2">"No Mergeatron Remote"</span>
-git remote add -f mergeatron <span class="k">${</span><span class="nv">REPOSITORY_URL</span><span class="k">}</span>
+</ul><div class="highlight"><pre>git status <span class="o">||</span> <span class="o">(</span>git clone git@github.com:EXAMPLE/MAIN.git . <span class="o">&amp;&amp;</span> git remote add upstream git@github.com:EXAMPLE/MAIN.git<span class="o">)</span>
 
-git checkout mergeatron/<span class="k">${</span><span class="nv">BRANCH_NAME</span><span class="k">}</span>
-git merge origin/<span class="k">${</span><span class="nv">BASE_BRANCH_NAME</span><span class="k">}</span>
 git clean -fdx
+git reset --hard HEAD
 
-git remote prune mergeatron
+git fetch upstream
+git checkout upstream/master
+
+git remote <span class="nb">set</span>-url origin <span class="k">${</span><span class="nv">REPOSITORY_URL</span><span class="k">}</span>
+git remote prune origin
+git fetch origin
+git merge origin/<span class="k">${</span><span class="nv">BRANCH_NAME</span><span class="k">}</span>
+
+git submodule update --init
+
+<span class="c"># DO YOUR THING DOWN HERE</span>
 </pre></div>
 
 <ul>
-<li>Update the above shell script to have the proper references to your master branch. You'll need to manually ensure that <code>origin</code> and <code>upstream</code> are created.</li>
+<li>Update the above shell script to have the proper references to your master branch.</li>
 </ul><h2>Extending Mergeatron</h2>
 
 <p>Mergeatron is built with extensibility in mind. To help achieve this it's been built around events instead of direct calls between plugins. This enables you to easily write any plugin you want that listens on the existing events and/or emits your own that others can use.</p>
@@ -172,14 +217,22 @@ git remote prune mergeatron
 <h2>Events</h2>
 
 <ul>
-<li>''pull.found'' - This is the first event emitted in a builds life cycle. It allows any listening plugins to check the build to make sure it should be handled.</li>
-<li>''pull.validated'' - If a build should be acted upon this event will be emitted. It allows any listening plugins to setup the build for processing. This means persisting it to a temporary, or permenant, data store of their choice and doing any other setup work they need to.</li>
-<li>''pull.processed'' - Once a build has been pre-processed it is ready to be built. When that happens this event is emitted. Any listening plugins can start the build.</li>
-<li>''build.started'' - This event is emitted when the build has been started.</li>
-<li>''build.succeeded'' - This event is emitted when a build was successful.</li>
-<li>''build.failed'' - This event is emitted when a build has failed.</li>
-<li>''pull.inline_status'' - This event is emitted when a plugin is announcing that something was found on a specific line of a files diff within the build.</li>
-<li>''build.artifact_found'' - This event is emitted once for each artifact found after the build has finished. Plugins receive the URL to the artifact and can download and act upon it if wanted.</li>
+<li>
+<code>pull.found</code> - This is the first event emitted in a builds life cycle. It allows any listening plugins to check the build to make sure it should be handled.</li>
+<li>
+<code>pull.validated</code> - If a build should be acted upon this event will be emitted. It allows any listening plugins to setup the build for processing. This means persisting it to a temporary, or permenant, data store of their choice and doing any other setup work they need to.</li>
+<li>
+<code>pull.processed</code> - Once a build has been pre-processed it is ready to be built. When that happens this event is emitted. Any listening plugins can start the build.</li>
+<li>
+<code>build.started</code> - This event is emitted when the build has been started.</li>
+<li>
+<code>build.succeeded</code> - This event is emitted when a build was successful.</li>
+<li>
+<code>build.failed</code> - This event is emitted when a build has failed.</li>
+<li>
+<code>pull.inline_status</code> - This event is emitted when a plugin is announcing that something was found on a specific line of a files diff within the build.</li>
+<li>
+<code>build.artifact_found</code> - This event is emitted once for each artifact found after the build has finished. Plugins receive the URL to the artifact and can download and act upon it if wanted.</li>
 </ul><h2>Contributing</h2>
 
 <ul>
