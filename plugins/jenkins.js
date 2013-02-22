@@ -249,8 +249,8 @@ Jenkins.prototype.checkJob = function(pull) {
 };
 
 /**
- * Downloads the artifacts for a build and dispatches an event for each one. This lets other plugins parse and process
- * results from the build however they like.
+ * Downloads the artifact list for a build and dispatches an event for each one. This lets other
+ * plugins parse and process results from the build however they like.
  *
  * @method processArtifacts
  * @param build {String}
@@ -293,6 +293,34 @@ Jenkins.prototype.processArtifacts = function(build, pull) {
 	});
 };
 
+/**
+ * Downloads a specific artifact and dispatches an event with its contents.
+ *
+ * @method downloadArtifact
+ * @param build {String}
+ * @param pull {Object}
+ * @param url {String}
+ */
+Jenkins.prototype.downloadArtifact = function(build, pull, artifact) {
+	var self = this,
+		options = { url: artifact.url };
+
+	if (this.config.user && this.config.pass) {
+		options.headers = {
+			authorization: 'Basic ' + (new Buffer(this.config.user + ":" + this.config.pass, 'ascii').toString('base64'))
+		};
+	}
+
+	request(options, function(err, response) {
+		if (err) {
+			self.mergeatron.log.error(err);
+			return;
+		}
+
+		self.mergeatron.emit('build.artifact_downloaded', build, pull, artifact.relativePath, response.body);
+	});
+};
+
 exports.init = function(config, mergeatron) {
 	var jenkins = new Jenkins(config, mergeatron);
 	jenkins.setup();
@@ -303,5 +331,9 @@ exports.init = function(config, mergeatron) {
 
 	mergeatron.on('pull.found', function(pull) {
 		jenkins.pullFound(pull);
+	});
+
+	mergeatron.on('build.download_artifact', function(build, pull, artifact) {
+		jenkins.downloadArtifact(build, pull, artifact);
 	});
 };
