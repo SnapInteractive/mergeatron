@@ -29,7 +29,8 @@ rl.question('Please enter the URL of the webhook', function(hook_url) {
 					}
 				},
 				headers: {
-					authorization: 'Basic ' + (new Buffer(auth, 'ascii').toString('base64'))
+					authorization: 'Basic ' + (new Buffer(auth, 'ascii').toString('base64')),
+					'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:20.0) Gecko/20100101 Firefox/20.0'
 				}
 			};
 

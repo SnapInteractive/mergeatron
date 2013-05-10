@@ -8,7 +8,8 @@ exports.config = {
 			host: 'localhost',
 			port: 27017
 		},
-		database: 'mergeatron'
+		database: 'mergeatron',
+		collections: [ 'pulls' ]
 	},
 	log_level: 'info',
 	plugin_dirs: [ './plugins/' ],
