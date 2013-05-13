@@ -5,7 +5,7 @@ exports.init = function() {
 
 	// mongo abstraction layer
 	var MongoDB = function() {
-		this.connection = require('mongojs').connect(config.database, ['pulls']);
+		this.connection = require('mongojs').connect(config.database, config.collections);
 	};
 
 	// pull methods
