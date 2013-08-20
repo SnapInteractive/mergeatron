@@ -245,7 +245,7 @@ GitHub.prototype.checkFiles = function(pull) {
  */
 GitHub.prototype.processPull = function(pull) {
 	var self = this;
-	this.mergeatron.db.findPull(pull.number, function(error, item) {
+	this.mergeatron.db.findPull(pull.number, pull.repo, function(error, item) {
 		var new_pull = false,
 			ssh_url = pull.head.repo.ssh_url,
 			branch = pull.head.label.split(':')[1];
@@ -268,7 +268,7 @@ GitHub.prototype.processPull = function(pull) {
 					}
 				});
 			});
-			self.mergeatron.db.updatePull(pull.number, { files: pull.files });
+			self.mergeatron.db.updatePull(pull.number, pull.repo, { files: pull.files });
 			pull.jobs = item.jobs;
 		}
 

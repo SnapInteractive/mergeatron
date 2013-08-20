@@ -116,7 +116,7 @@ Jenkins.prototype.buildPull = function(pull, number, sha, ssh_url, branch, updat
 			return;
 		}
 
-		self.mergeatron.db.updatePull(number, { head: sha, updated_at: updated_at});
+		self.mergeatron.db.updatePull(number, pull.repo, { head: sha, updated_at: updated_at});
 		self.mergeatron.db.insertJob(pull, {
 			id: job_id,
 			status: 'new',
