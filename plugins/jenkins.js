@@ -109,7 +109,8 @@ Jenkins.prototype.buildPull = function(pull, number, sha, ssh_url, branch, updat
 		BRANCH_NAME: branch,
 		JOB: job_id,
 		PULL: number,
-		BASE_BRANCH_NAME: pull.base.ref
+		BASE_BRANCH_NAME: pull.base.ref,
+		SHA: sha
 	}, function(error) {
 		if (error) {
 			self.mergeatron.log.error(error);
