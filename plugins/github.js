@@ -36,11 +36,7 @@ var GitHub = function(config, mergeatron, events) {
 		port: config.api.port || null
 	});
 
-	this.api.authenticate({
-		type: 'basic',
-		username: config.auth.user,
-		password: config.auth.pass
-	});
+	this.api.authenticate(config.auth);
 };
 
 /**
@@ -323,14 +319,22 @@ GitHub.prototype.processPull = function(pull) {
  * @param description {String}
  */
 GitHub.prototype.createStatus = function(sha, user, repo, state, build_url, description) {
-	this.api.statuses.create({
+	var self = this, args = arguments;
+    self.mergeatron.log.info('creating status ' + state + ' for sha ' + sha + ' for build_url ' + build_url);
+    this.api.statuses.create({
 		user: user,
 		repo: repo,
 		sha: sha,
 		state: state,
 		target_url: build_url,
 		description: description
-	});
+	}, function(error, resp) {
+        if (error) {
+          self.mergeatron.log.error(error);
+          self.mergeatron.log.error(args);
+          return;
+        }
+    });
 };
 
 /**
