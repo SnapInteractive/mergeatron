@@ -195,7 +195,7 @@ Jenkins.prototype.checkJob = function(pull) {
 						self.mergeatron.emit('build.started', job, pull, build.url);
 					}
 
-					if (job.status != 'finished') {
+					if (job.status != 'finished' && !build.building) {
 						if (build.result == 'FAILURE') {
 							self.mergeatron.db.updateJobStatus(job.id, 'finished');
 							self.mergeatron.emit('build.failed', job, pull, build.url + 'console');
