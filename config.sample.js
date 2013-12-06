@@ -17,8 +17,9 @@ exports.config = {
 		github: {
 			method: 'hooks',    // 'hooks' for webhooks or 'polling' to poll the REST API
 			auth: {
-				user: 'username',
-				pass: 'password'
+				type: 'basic',
+				username: 'username',
+				password: 'password'
 			},
 			user: 'user-to-watch',
 			repos: [ 'repo_name' ],
