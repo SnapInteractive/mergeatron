@@ -17,13 +17,20 @@ var config = require('./config').config,
  */
 var Mergeatron = function(db, config) {
 	this.db = db;
-	this.log = new (winston.Logger)({
-		transports: [
-			new (winston.transports.Console)({ level: config.log_level })
-		]
-	});
-
-	this.log.cli();
+    this.log = {
+      error: function(err){
+        var stack = new Error().stack
+        console.log( stack )
+        console.log( err )
+      },
+      info: function(info){
+        console.log(info)
+      },
+      debug: function(debug, params){
+        params = params || {};
+        console.log(debug + ' :: ' + JSON.stringify(params));
+      }
+    };
 };
 
 Mergeatron.prototype = new events.EventEmitter();

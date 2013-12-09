@@ -3,10 +3,12 @@ exports.config = {
 	db: {
 		type: 'mongo',
 		auth: {
-			user: 'username',
-			pass: 'password',
-			host: 'localhost',
-			port: 27017
+			user:    'username',
+			pass:    'password',
+			host:    'your.host',
+			port:    27017,
+            db:      'mergeatron',
+            slaveOk: true
 		},
 		database: 'mergeatron',
 		collections: [ 'pulls' ]
