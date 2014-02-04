@@ -52,7 +52,7 @@ GitHubPolling.prototype.checkEvents = function() {
 	this.config.repos.forEach(function(repo) {
 		self.api.events.getFromRepo({ 'user': self.config.user, 'repo': repo }, function(err, repoEvents) {
             if (err) {
-                mergeatron.log.error('Error fetching events: ' + err);
+                self.mergeatron.log.error('Error fetching events: ' + err);
                 return;
             }
 
@@ -127,7 +127,7 @@ GitHubPolling.prototype.setup = function() {
     async.parallel({
         'github': function() {
             var run_github = function() {
-                self.checkRepos();
+                self.checkEvents();
                 setTimeout(run_github, self.config.frequency);
             };
 
