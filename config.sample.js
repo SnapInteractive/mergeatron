@@ -11,7 +11,7 @@ exports.config = {
 			slaveOk: true
 		},
 		database: 'mergeatron',
-		collections: [ 'pulls' ]
+		collections: [ 'pulls' ] // 'pulls' is required for db.js
 	},
 	log_level: 'info',
 	plugin_dirs: [ './plugins/' ],
@@ -31,6 +31,28 @@ exports.config = {
 			port: '8888',        // only necessary if method is 'hooks'
 			// optional. If running GitHub Enterprise this is the host/port to access the REST API.
 			// Can be left out if just using github.com.
+			api: {
+				host: 'ghe.example.com',
+				port: '1234'
+			}
+		},
+		githubPolling: {
+			auth: {
+				type: 'basic',
+				username: 'username',
+				password: 'password'
+			},
+			user: 'user-to-watch',
+			repos: [
+                {
+                  name: "repo_name",
+                  job: "job_name"
+                }
+            ],
+			skip_file_listing: false,
+			frequency: 15000,
+			port: '8888',
+			polling_regex: [ new RegExp(/^master$|^pre-production$|.*-ci$/g) ],
 			api: {
 				host: 'ghe.example.com',
 				port: '1234'

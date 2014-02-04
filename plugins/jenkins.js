@@ -382,4 +382,8 @@ exports.init = function(config, mergeatron) {
 	mergeatron.on('process_artifacts', function(job_name, build, pull) {
 		jenkins.processArtifacts(job_name, build, pull);
 	});
+
+    mergeatron.on('event.ref_update', function(repo, branch, head, after, email) {
+        jenkins.triggerPollingBuild(repo, branch, head, after, email);
+    });
 };

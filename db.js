@@ -13,6 +13,18 @@ exports.init = function() {
 		this.connection.pulls.findOne({ number: pull_number, repo: pull_repo }, callback);
 	};
 
+	MongoDB.prototype.findEvent = function(data) {
+		this.connection.events.findOne(data, callback);
+	};
+
+	MongoDB.prototype.findMasterEvent = function(ref) {
+		this.connection.events.findOne( { ref: ref, head: null, after: null }, callback);
+	};
+
+	MongoDB.prototype.insertEvent = function(event, callback) {
+		this.connection.events.insert(event, callback);
+	};
+
 	MongoDB.prototype.updatePull = function(pull_number, pull_repo, update_columns) {
 		this.connection.pulls.update({ number: pull_number, repo: pull_repo }, { $set: update_columns });
 	};
