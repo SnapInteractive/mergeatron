@@ -40,7 +40,7 @@ GitHubPolling.prototype.validateRef = function(payload) {
         }
 
         self.mergeatron.db.insertEvent(payload);
-        self.mergeatron.emit('events.ref_update', payload.repo, payload.ref, payload.master_branch, payload.head, payload.after, payload.email);
+        self.mergeatron.emit('events.ref_update', payload);
     });
 };
 
@@ -140,6 +140,7 @@ exports.init = function(config, mergeatron) {
     events.on('ref_event', function(event) {
         poller.buildPayload(event);
     });
+
     events.on('payload_built', function(payload) {
         poller.validateRef(payload);
     });
