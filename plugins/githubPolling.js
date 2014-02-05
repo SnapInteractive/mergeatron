@@ -4,16 +4,15 @@
  */
 "use strict";
 
-var http = require('http'),
-	async = require('async'),
-	range_check = require('range_check'),
+var async = require('async'),
 	emitter = require('events').EventEmitter,
 	events = new emitter(),
 	GitHubApi = require('github');
 
-var GitHubPolling = function(config, mergeatron) {
+var GitHubPolling = function(config, mergeatron, events) {
 	config.api = config.api || {};
 
+    this.events = events;
 	this.config = config;
 	this.mergeatron = mergeatron;
 	this.api = new GitHubApi({
@@ -41,7 +40,7 @@ GitHubPolling.prototype.validateRef = function(payload) {
         }
 
         self.mergeatron.db.insertEvent(payload);
-        self.mergeatron.emit('event.ref_update', payload.repo, payload.ref, payload.master_branch, payload.head, payload.after, payload.email);
+        self.mergeatron.emit('events.ref_update', payload.repo, payload.ref, payload.master_branch, payload.head, payload.after, payload.email);
     });
 };
 
@@ -61,17 +60,19 @@ GitHubPolling.prototype.checkEvents = function() {
                     return;
                 }
 
-                self.mergeatron.log.debug('Event found: ' + event);
+                if (event.type === 'CreateEvent' && event.payload.ref_type !== 'branch') {
+                    self.mergeatron.log.info('CreateEvent did not have a ref_type === "branch", skipping', null);
+                    return;
+                }
 
-                self.buildPayload(event, function(err, payload) {
-                    self.validateRef(payload);
-                });
+                self.mergeatron.log.debug('Event found: ' + event);
+                self.events.emit('ref_event', event);
             });
         });
 	});
 };
 
-GitHubPolling.prototype.buildPayload = function(event, callback) {
+GitHubPolling.prototype.buildPayload = function(event) {
 
     var payload = {
         id: event.id,
@@ -84,11 +85,6 @@ GitHubPolling.prototype.buildPayload = function(event, callback) {
         email: null
     };
 
-    if (event.type === 'CreateEvent' && event.payload.ref_type !== 'branch') {
-        callback('CreateEvent did not have a ref_type === "branch", skipping', null);
-        return;
-    }
-
     if (event.type === 'CreateEvent') {
         payload.master_branch = event.payload.master_branch;
     }
@@ -99,6 +95,7 @@ GitHubPolling.prototype.buildPayload = function(event, callback) {
         payload.after = event.payload.after;
     }
 
+    var self = this;
     this.mergeatron.db.findMasterEvent(payload.ref, function(err, res) {
         if (err) {
             self.mergeatron.log.error(err);
@@ -106,7 +103,7 @@ GitHubPolling.prototype.buildPayload = function(event, callback) {
         }
 
         payload.master_branch = (!res) ? null : res.master_branch;
-        this.api.users.getEmails(event.actor, function(err, emails) {
+        self.api.users.getEmails(event.actor, function(err, emails) {
             emails.forEach(function(email) {
               if (email.primary) {
                   payload.email = email.email;
@@ -116,9 +113,9 @@ GitHubPolling.prototype.buildPayload = function(event, callback) {
                 payload.email = emails.pop().email || emails.pop();
             }
 
-            callback(err, payload);
+            self.events.emit('payload_built', payload);
         });
-    }.bind(this));
+    });
 };
 
 
@@ -139,4 +136,11 @@ GitHubPolling.prototype.setup = function() {
 exports.init = function(config, mergeatron) {
 	var poller = new GitHubPolling(config, mergeatron);
 	poller.setup();
+
+    events.on('ref_event', function(event) {
+        poller.buildPayload(event);
+    });
+    events.on('payload_built', function(payload) {
+        poller.validateRef(payload);
+    });
 };
