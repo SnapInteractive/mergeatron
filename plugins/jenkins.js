@@ -385,15 +385,7 @@ exports.init = function(config, mergeatron) {
 		jenkins.processArtifacts(job_name, build, pull);
 	});
 
-    mergeatron.on('events.ref_update', function(repo, branch, master_branch, head, after, email) {
-        var params = {
-            repo: repo,
-            branch: branch,
-            base_branch: master_branch,
-            head: head,
-            latest_head: after,
-            emails: email
-        };
-        jenkins.triggerBuild(jenkins.findProjectByRepo(repo, 'polling_projects'), params, triggerBuildErrCb);
+    mergeatron.on('events.ref_update', function(payload) {
+        jenkins.triggerBuild(jenkins.findProjectByRepo(payload.repo, 'polling_projects'), payload, triggerBuildErrCb);
     });
 };
