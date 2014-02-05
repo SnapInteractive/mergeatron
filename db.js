@@ -13,11 +13,11 @@ exports.init = function() {
 		this.connection.pulls.findOne({ number: pull_number, repo: pull_repo }, callback);
 	};
 
-	MongoDB.prototype.findEvent = function(data) {
+	MongoDB.prototype.findEvent = function(data, callback) {
 		this.connection.events.findOne(data, callback);
 	};
 
-	MongoDB.prototype.findMasterEvent = function(ref) {
+	MongoDB.prototype.findMasterEvent = function(ref, callback) {
 		this.connection.events.findOne( { ref: ref, head: null, after: null }, callback);
 	};
 
