@@ -11,7 +11,9 @@ exports.config = {
 			slaveOk: true
 		},
 		database: 'mergeatron',
-		collections: [ 'pulls' ] // 'pulls' is required for db.js
+		// pulls is required for the github plugin
+		// events for githubPolling
+		collections: [ 'pulls', 'events' ]
 	},
 	log_level: 'info',
 	plugin_dirs: [ './plugins/' ],
@@ -37,26 +39,19 @@ exports.config = {
 			}
 		},
 		githubPolling: {
-			auth: {
-				type: 'basic',
-				username: 'username',
-				password: 'password'
-			},
-			user: 'user-to-watch',
-			repos: [
-                {
-                  name: "repo_name",
-                  job: "job_name"
-                }
+            auth: {
+                type: 'basic',
+                username: 'user',
+                password: 'password'
+            },
+            user: 'your-user',
+            repos: [
+                "some-repo"
             ],
-			skip_file_listing: false,
-			frequency: 15000,
-			port: '8888',
-			polling_regex: [ new RegExp(/^master$|^pre-production$|.*-ci$/g) ],
-			api: {
-				host: 'ghe.example.com',
-				port: '1234'
-			}
+            skip_file_listing: false,
+            frequency: 15000,
+            port: '8888',
+            polling_regex: [ new RegExp(/^master$|^pre-production$|.*-ci$/g) ],
 		},
 		jenkins:  {
 			user: false,
