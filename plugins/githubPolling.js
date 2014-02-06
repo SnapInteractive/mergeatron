@@ -9,7 +9,7 @@ var async = require('async'),
 	events = new emitter(),
 	GitHubApi = require('github');
 
-var GitHubPolling = function(config, mergeatron, events) {
+var GitHubPolling = function(config, mergeatron) {
 	config.api = config.api || {};
 
     this.events = events;
@@ -31,7 +31,8 @@ GitHubPolling.prototype.validateRef = function(payload) {
     var self = this;
     this.mergeatron.db.findEvent({ ref: payload.ref, head: payload.head, after: payload.after }, function(err, res) {
         if (err) {
-            self.mergeatron.log.error(err);
+            self.mergeatron.log.error('Error while looking for payload: ' + JSON.stringify(payload));
+            return;
         }
 
         // exact match for payload found
@@ -45,9 +46,10 @@ GitHubPolling.prototype.validateRef = function(payload) {
 };
 
 GitHubPolling.prototype.checkEvents = function() {
+	var self = this;
+
 	this.mergeatron.log.debug('Polling for github events');
 
-	var self = this;
 	this.config.repos.forEach(function(repo) {
 		self.api.events.getFromRepo({ 'user': self.config.user, 'repo': repo }, function(err, repoEvents) {
             if (err) {
@@ -65,7 +67,7 @@ GitHubPolling.prototype.checkEvents = function() {
                     return;
                 }
 
-                self.mergeatron.log.debug('Event found: ' + event);
+                self.mergeatron.log.debug('Event found: ' + JSON.stringify(event));
                 self.events.emit('ref_event', event);
             });
         });
@@ -98,8 +100,8 @@ GitHubPolling.prototype.buildPayload = function(event) {
     var self = this;
     this.mergeatron.db.findMasterEvent(payload.ref, function(err, res) {
         if (err) {
-            self.mergeatron.log.error(err);
-            process.exit(1);
+            self.mergeatron.log.error('Error while building payload (event no. ' + event.id + ') from event: ' + err);
+            return;
         }
 
         payload.master_branch = (!res) ? null : res.master_branch;
