@@ -86,7 +86,7 @@ exports.init = function() {
 		if (update_columns.files && typeof update_columns.files !== 'string'){
 			update_columns.files = JSON.stringify(update_columns.files);
 		}
-		this.connection.query('UPDATE pulls SET ? WHERE numbers = ? AND repo = ?', [ update_columns, pull_number, pull_repo ]);
+		this.connection.query('UPDATE pulls SET ? WHERE number = ? AND repo = ?', [ update_columns, pull_number, pull_repo ]);
 	};
 
 	MySQL.prototype.insertPull = function(pull, callback) {
