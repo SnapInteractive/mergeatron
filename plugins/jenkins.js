@@ -42,9 +42,10 @@ Jenkins.prototype.findUnfinishedJob = function(pull) {
  * @param repo {String}
  * @returns {Object}
  */
-Jenkins.prototype.findProjectByRepo = function(repo) {
-	var found = null;
-	this.config.projects.forEach(function(project) {
+Jenkins.prototype.findProjectByRepo = function(repo, project_list) {
+	var found = null,
+        project_list = project_list || 'projects';
+	this.config[project_list].forEach(function(project) {
 		if (repo == project.repo) {
 			found = project;
 		}
@@ -352,7 +353,12 @@ Jenkins.prototype.downloadArtifact = function(build, pull, artifact) {
 };
 
 exports.init = function(config, mergeatron) {
-	var jenkins = new Jenkins(config, mergeatron);
+	var jenkins = new Jenkins(config, mergeatron),
+        triggerBuildErrCb = function(error) {
+          if (error) {
+            mergeatron.log.info('Received error from Jenkins when triggering build', { job_name: job_name, url_options: url_options });
+          }
+        };
 	jenkins.setup();
 
 	mergeatron.on('pull.processed', function(pull, pull_number, sha, ssh_url, branch, updated_at) {
@@ -368,11 +374,7 @@ exports.init = function(config, mergeatron) {
 	});
 
 	mergeatron.on('build.trigger', function(job_name, url_options) {
-		jenkins.triggerBuild(job_name, url_options, function(error) {
-			if (error) {
-				mergeatron.log.info('Received error from Jenkins when triggering build', { job_name: job_name, url_options: url_options });
-			}
-		});
+		jenkins.triggerBuild(job_name, url_options, triggerBuildErrCb);
 	});
 
 	mergeatron.on('build.check', function(job_name, callback) {
@@ -382,4 +384,8 @@ exports.init = function(config, mergeatron) {
 	mergeatron.on('process_artifacts', function(job_name, build, pull) {
 		jenkins.processArtifacts(job_name, build, pull);
 	});
+
+    mergeatron.on('events.ref_update', function(payload) {
+        jenkins.triggerBuild(jenkins.findProjectByRepo(payload.repo, 'polling_projects'), payload, triggerBuildErrCb);
+    });
 };

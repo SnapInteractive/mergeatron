@@ -46,13 +46,12 @@ config.plugin_dirs.forEach(function(dir) {
 				continue;
 			}
 
-			mergeatron.log.info('Loading plugin: ' + pluginName);
-
 			if (config.plugins && config.plugins[pluginName]) {
 				conf = config.plugins[pluginName];
 			}
 
 			if (conf.enabled === undefined || conf.enabled) {
+				mergeatron.log.info('Loading plugin: ' + pluginName);
 				require(filename).init(conf, mergeatron);
 			} else {
 				mergeatron.log.info('Not loading disabled plugin ' + pluginName);

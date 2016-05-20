@@ -5,11 +5,15 @@ exports.config = {
 		auth: {
 			user: 'username',
 			pass: 'password',
-			host: 'localhost',
-			port: 27017
+			host: 'your.host',
+			port: 27017,
+			db: 'mergeatron',
+			slaveOk: true
 		},
 		database: 'mergeatron',
-		collections: [ 'pulls' ]
+		// pulls is required for the github plugin
+		// events for githubPolling
+		collections: [ 'pulls', 'events' ]
 	},
 	log_level: 'info',
 	plugin_dirs: [ './plugins/' ],
@@ -33,6 +37,21 @@ exports.config = {
 				host: 'ghe.example.com',
 				port: '1234'
 			}
+		},
+		githubPolling: {
+            auth: {
+                type: 'basic',
+                username: 'user',
+                password: 'password'
+            },
+            user: 'your-user',
+            repos: [
+                "some-repo"
+            ],
+            skip_file_listing: false,
+            frequency: 15000,
+            port: '8888',
+            polling_regex: [ new RegExp(/^master$|^pre-production$|.*-ci$/g) ],
 		},
 		jenkins:  {
 			user: false,

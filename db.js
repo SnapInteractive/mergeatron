@@ -5,12 +5,24 @@ exports.init = function() {
 
 	// mongo abstraction layer
 	var MongoDB = function() {
-		this.connection = require('mongojs').connect(config.database, config.collections);
+		this.connection = require('mongojs').connect(config.auth, config.collections);
 	};
 
 	// pull methods
 	MongoDB.prototype.findPull = function(pull_number, pull_repo, callback) {
 		this.connection.pulls.findOne({ number: pull_number, repo: pull_repo }, callback);
+	};
+
+	MongoDB.prototype.findEvent = function(data, callback) {
+		this.connection.events.findOne(data, callback);
+	};
+
+	MongoDB.prototype.findMasterEvent = function(ref, callback) {
+		this.connection.events.findOne( { ref: ref, head: null, after: null }, callback);
+	};
+
+	MongoDB.prototype.insertEvent = function(event, callback) {
+		this.connection.events.insert(event, callback);
 	};
 
 	MongoDB.prototype.updatePull = function(pull_number, pull_repo, update_columns) {
