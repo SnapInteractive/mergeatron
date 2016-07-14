@@ -1,3 +1,7 @@
+v0.1.3
+=====
+* Updated files to support Node v4+
+
 v0.1.2
 =====
 * Add support for parsing PHP Code Sniffer results

@@ -25,27 +25,27 @@ exports.config = {
 			repos: [ 'repo_name' ],
 			retry_whitelist: [ 'user', 'user2' ],    // optional whitelist of those able to trigger retries
 			skip_file_listing: false,
-			frequency: 15000,    // only necessary if method is 'polling'
+			frequency: 75000,    // only necessary if method is 'polling'
 			port: '8888',        // only necessary if method is 'hooks'
 			// optional. If running GitHub Enterprise this is the host/port to access the REST API.
 			// Can be left out if just using github.com.
-			api: {
-				host: 'ghe.example.com',
-				port: '1234'
-			}
+			//api: {
+			//	host: 'ghe.example.com',
+			//	port: '1234'
+			//}
 		},
 		jenkins:  {
-			user: false,
-			pass: false,
+			//user: false,
+			//pass: false,
 			protocol: 'http',
 			host: 'jenkins.yoururl.com:8080',
-			projects: [{
-				name: 'project_name',
-				repo: 'repo_name',
-				token: 'token',
-				rules: [ new RegExp(/.php/g) ]
+			token: 'abc123'
+			//projects: [{
+				//name: 'project_name',
+				//repo: 'repo_name',
+				//token: 'token',
 			}],
-			frequency: 2000
+			frequency: 10000
 		},
 		phpcs: {
 			enabled: false,

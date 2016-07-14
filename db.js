@@ -5,20 +5,23 @@ exports.init = function() {
 
 	// mongo abstraction layer
 	var MongoDB = function() {
-		this.connection = require('mongojs').connect(config.database, config.collections);
+		//this.connection = require('mongojs').connect(config.database, ['pulls']);
+		var mongojs = require('mongojs')
+		this.connection = mongojs('mongodb://' + config.auth.host + ':' + config.auth.port + '/pulls')
 	};
 
 	// pull methods
-	MongoDB.prototype.findPull = function(pull_number, pull_repo, callback) {
-		this.connection.pulls.findOne({ number: pull_number, repo: pull_repo }, callback);
+	MongoDB.prototype.findPull = function(pull_number, callback) {
+		this.connection.pulls.findOne({ _id: pull_number }, callback);
 	};
 
-	MongoDB.prototype.updatePull = function(pull_number, pull_repo, update_columns) {
-		this.connection.pulls.update({ number: pull_number, repo: pull_repo }, { $set: update_columns });
+	MongoDB.prototype.updatePull = function(pull_number, update_columns) {
+		this.connection.pulls.update({ _id: pull_number }, { $set: update_columns });
 	};
 
 	MongoDB.prototype.insertPull = function(pull, callback) {
 		this.connection.pulls.insert({
+			_id: pull.number,
 			number: pull.number,
 			repo: pull.repo,
 			created_at: pull.created_at,
@@ -40,7 +43,7 @@ exports.init = function() {
 
 		pull.jobs.push(job);
 
-		this.updatePull(pull.number, pull.repo, { jobs: pull.jobs});
+		this.updatePull(pull.number, { jobs: pull.jobs});
 	};
 
 	MongoDB.prototype.updateJobStatus = function(job_id, status) {
@@ -63,8 +66,8 @@ exports.init = function() {
 	};
 
 	// pull methods
-	MySQL.prototype.findPull = function(pull_number, pull_repo, callback) {
-		this.connection.query('SELECT pulls.*, jobs.status, jobs.id as job_id, jobs.head as jobs_head FROM pulls LEFT JOIN jobs ON pulls.number = jobs.pull_number WHERE pulls.number = ? AND pulls.repo = ?', [ pull_number, pull_repo ], function (err, result){
+	MySQL.prototype.findPull = function(pull_number, callback) {
+		this.connection.query('SELECT pulls.*, jobs.status, jobs.id as job_id, jobs.head as jobs_head FROM pulls LEFT JOIN jobs ON pulls.id = jobs.pull_number WHERE pulls.id = ?', [ pull_number ], function (err, result){
 			var response;
 			if (result.length) {
 				response = result[0];
@@ -82,15 +85,16 @@ exports.init = function() {
 		});
 	};
 
-	MySQL.prototype.updatePull = function(pull_number, pull_repo, update_columns) {
+	MySQL.prototype.updatePull = function(pull_number, update_columns) {
 		if (update_columns.files && typeof update_columns.files !== 'string'){
 			update_columns.files = JSON.stringify(update_columns.files);
 		}
-		this.connection.query('UPDATE pulls SET ? WHERE number = ? AND repo = ?', [ update_columns, pull_number, pull_repo ]);
+		this.connection.query('UPDATE pulls SET ? WHERE id = ?', [ update_columns, pull_number ]);
 	};
 
 	MySQL.prototype.insertPull = function(pull, callback) {
 		this.connection.query('INSERT INTO pulls SET ?', {
+			id: pull.number,
 			number: pull.number,
 			repo: pull.repo,
 			created_at: pull.created_at,
@@ -101,7 +105,7 @@ exports.init = function() {
 	};
 
 	MySQL.prototype.findPullsByJobStatus = function(statuses, callback) {
-		this.connection.query('SELECT pulls.*, jobs.status, jobs.id as job_id, jobs.head as job_head FROM pulls LEFT JOIN jobs ON pulls.number = jobs.pull_number WHERE jobs.status IN (?) ORDER BY pulls.id ASC', [ statuses ], function (err, result){
+		this.connection.query('SELECT pulls.*, jobs.status, jobs.id as job_id, jobs.head as job_head FROM pulls LEFT JOIN jobs ON pulls.id = jobs.pull_number WHERE jobs.status IN (?) ORDER BY pulls.id ASC', [ statuses ], function (err, result){
 			if (!result.length){
 				return;
 			}

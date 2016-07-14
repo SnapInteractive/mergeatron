@@ -50,6 +50,7 @@ Jenkins.prototype.findProjectByRepo = function(repo) {
 		}
 	});
 
+	this.mergeatron.log.info('Found project by repo: ', repo, '; project: ', found);
 	return found;
 };
 
@@ -98,26 +99,40 @@ Jenkins.prototype.setup = function() {
 Jenkins.prototype.buildPull = function(pull, number, sha, ssh_url, branch, updated_at) {
 	var project = this.findProjectByRepo(pull.repo),
 		job_id = uuid.v1(),
-		self = this;
+		options = {
+			url: url.format({
+				protocol: this.config.protocol,
+				host: this.config.host,
+				pathname: '/job/' + project.name + '/buildWithParameters',
+				query: {
+					token: project.token,
+					cause: 'Testing Pull Request: ' + number,
+					REPOSITORY_URL: ssh_url,
+					BRANCH_NAME: branch,
+					JOB: job_id,
+					PULL: number,
+					BASE_BRANCH_NAME: pull.base.ref
+				}
+			}),
+			method: 'GET'
+		};
+
+	if (this.config.user && this.config.pass) {
+		options.headers = {
+			authorization: 'Basic ' + (new Buffer(this.config.user + ":" + this.config.pass, 'ascii').toString('base64'))
+		};
+	}
 
 	this.mergeatron.log.info('Starting build for pull', { pull_number: pull.number, project: project.name });
 
-	this.triggerBuild(project.name, {
-		token: project.token,
-		cause: 'Testing Pull Request: ' + number,
-		REPOSITORY_URL: ssh_url,
-		BRANCH_NAME: branch,
-		JOB: job_id,
-		PULL: number,
-		BASE_BRANCH_NAME: pull.base.ref,
-		SHA: sha
-	}, function(error) {
+	var self = this;
+	request(options, function(error) {
 		if (error) {
 			self.mergeatron.log.error(error);
 			return;
 		}
 
-		self.mergeatron.db.updatePull(number, pull.repo, { head: sha, updated_at: updated_at});
+		self.mergeatron.db.updatePull(number, { head: sha, updated_at: updated_at});
 		self.mergeatron.db.insertJob(pull, {
 			id: job_id,
 			status: 'new',
@@ -173,13 +188,31 @@ Jenkins.prototype.pullFound = function(pull) {
  * @param pull {Object}
  */
 Jenkins.prototype.checkJob = function(pull) {
+	this.mergeatron.log.info('Inside checkJob for pull: ', pull);
 	var self = this,
 		job = this.findUnfinishedJob(pull),
-		project = this.findProjectByRepo(pull.repo);
+		project = this.findProjectByRepo(pull.repo),
+		options = {
+			url: url.format({
+				protocol: this.config.protocol,
+				host: this.config.host,
+				pathname: '/job/' + project.name + '/api/json',
+				query: {
+					tree: 'builds[number,url,actions[parameters[name,value]],building,result]'
+				}
+			}),
+			json: true
+		};
 
-	this.checkBuild(project.name, function(error, response) {
+	if (this.config.user && this.config.pass) {
+		options.headers = {
+			authorization: 'Basic ' + (new Buffer(this.config.user + ":" + this.config.pass, 'ascii').toString('base64'))
+		};
+	}
+
+	request(options, function(error, response) {
 		if (error) {
-			self.mergeatron.log.error('Could not connect to jenkins, there seems to be a connectivity issue!');
+			self.mergeatron.log.error('could not connect to jenkins, there seems to be a connectivity issue!');
 			return;
 		}
 
@@ -195,17 +228,17 @@ Jenkins.prototype.checkJob = function(pull) {
 						self.mergeatron.emit('build.started', job, pull, build.url);
 					}
 
-					if (job.status != 'finished' && !build.building) {
+					if (job.status != 'finished') {
 						if (build.result == 'FAILURE') {
 							self.mergeatron.db.updateJobStatus(job.id, 'finished');
 							self.mergeatron.emit('build.failed', job, pull, build.url + 'console');
 
-							self.processArtifacts(project.name, build, pull);
+							self.processArtifacts(build, pull);
 						} else if (build.result == 'SUCCESS') {
 							self.mergeatron.db.updateJobStatus(job.id, 'finished');
 							self.mergeatron.emit('build.succeeded', job, pull, build.url);
 
-							self.processArtifacts(project.name, build, pull);
+							self.processArtifacts(build, pull);
 						} else if (build.result == 'ABORTED') {
 							self.mergeatron.db.updateJobStatus(job.id, 'finished');
 							self.mergeatron.emit('build.aborted', job, pull, build.url);
@@ -218,80 +251,20 @@ Jenkins.prototype.checkJob = function(pull) {
 };
 
 /**
- * Makes a GET request to the Jenkins API to start a build
- *
- * @method triggerBuild
- * @param job_name {String}
- * @param url_options {Options}
- * @param callback {Function}
- */
-Jenkins.prototype.triggerBuild = function(job_name, url_options, callback) {
-	var options = {
-		url: url.format({
-			protocol: this.config.protocol,
-			host: this.config.host,
-			pathname: '/job/' + job_name + '/buildWithParameters',
-			query: url_options
-		}),
-		method: 'GET'
-	};
-
-	if (this.config.user && this.config.pass) {
-		options.headers = {
-			authorization: 'Basic ' + (new Buffer(this.config.user + ":" + this.config.pass, 'ascii').toString('base64'))
-		};
-	}
-
-	request(options, callback);
-};
-
-/**
- * Checks the Jenkins API for the status of a job
- *
- * @method checkBuild
- * @param job_name {String}
- * @param callback {Function}
- */
-Jenkins.prototype.checkBuild = function(job_name, callback) {
-	var self = this,
-		options = {
-			url: url.format({
-				protocol: this.config.protocol,
-				host: this.config.host,
-				pathname: '/job/' + job_name + '/api/json',
-				query: {
-					tree: 'builds[number,url,actions[parameters[name,value]],building,result]'
-				}
-			}),
-			json: true
-		};
-
-	if (this.config.user && this.config.pass) {
-		options.headers = {
-			authorization: 'Basic ' + (new Buffer(this.config.user + ":" + this.config.pass, 'ascii').toString('base64'))
-		};
-	}
-
-	request(options, function(error, response) {
-		callback(error, response, self.mergeatron);
-	});
-};
-
-/**
  * Downloads the artifact list for a build and dispatches an event for each one. This lets other
  * plugins parse and process results from the build however they like.
  *
  * @method processArtifacts
- * @param job_name {String}
  * @param build {String}
  * @param pull {Object}
  */
-Jenkins.prototype.processArtifacts = function(job_name, build, pull) {
-	var options = {
+Jenkins.prototype.processArtifacts = function(build, pull) {
+	var project = this.findProjectByRepo(pull.repo),
+		options = {
 		url: url.format({
 			protocol: this.config.protocol,
 			host: this.config.host,
-			pathname: '/job/' + job_name + '/' + build.number + '/api/json',
+			pathname: '/job/' + project.name + '/' + build.number + '/api/json',
 			query: {
 				tree: 'artifacts[fileName,relativePath]'
 			}
@@ -312,10 +285,10 @@ Jenkins.prototype.processArtifacts = function(job_name, build, pull) {
 			return;
 		}
 
-		self.mergeatron.log.debug('Retrieved artifacts for build', { build: build.number, project: job_name });
+		self.mergeatron.log.debug('Retrieved artifacts for build', { build: build.number, project: project.name });
 
 		response.body.artifacts.forEach(function(artifact) {
-			artifact.url = self.config.protocol + '://' + self.config.host + '/job/' + job_name + '/' + build.number + '/artifact/' + artifact.relativePath;
+			artifact.url = self.config.protocol + '://' + self.config.host + '/job/' + project.name + '/' + build.number + '/artifact/' + artifact.relativePath;
 
 			self.mergeatron.log.debug('Found artifact for build', { build: build.number, url: artifact.url });
 			self.mergeatron.emit('build.artifact_found', build, pull, artifact);
@@ -365,21 +338,5 @@ exports.init = function(config, mergeatron) {
 
 	mergeatron.on('build.download_artifact', function(build, pull, artifact) {
 		jenkins.downloadArtifact(build, pull, artifact);
-	});
-
-	mergeatron.on('build.trigger', function(job_name, url_options) {
-		jenkins.triggerBuild(job_name, url_options, function(error) {
-			if (error) {
-				mergeatron.log.info('Received error from Jenkins when triggering build', { job_name: job_name, url_options: url_options });
-			}
-		});
-	});
-
-	mergeatron.on('build.check', function(job_name, callback) {
-		jenkins.checkBuild(job_name, callback);
-	});
-
-	mergeatron.on('process_artifacts', function(job_name, build, pull) {
-		jenkins.processArtifacts(job_name, build, pull);
 	});
 };
