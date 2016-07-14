@@ -14,7 +14,6 @@ var http = require('http'),
 // We only want to accept local requests and GitHub requests. See the Service Hooks
 // page of any repo you have admin access to to see the list of GitHub public IPs.
 var allowed_ips = [ '127.0.0.1' ],
-	allowed_ranges = [ '207.97.227.253/32', '50.57.128.197/32', '108.171.174.178/32', '50.57.231.61/32', '204.232.175.64/27', '192.30.252.0/22' ],
 	allowed_events = [ 'pull_request', 'issue_comment' ];
 
 /**
@@ -36,7 +35,11 @@ var GitHub = function(config, mergeatron, events) {
 		port: config.api.port || null
 	});
 
-	this.api.authenticate(config.auth);
+	this.api.authenticate({
+		type: 'basic',
+		username: config.auth.user,
+		password: config.auth.pass
+	});
 };
 
 /**
@@ -77,19 +80,10 @@ GitHub.prototype.setupServer = function() {
 	var self = this;
 	http.createServer(function(request, response) {
 		if (allowed_ips.indexOf(request.connection.remoteAddress) == -1) {
-			var allowed = false;
-			for (var i in allowed_ranges) {
-				if (range_check.in_range(request.connection.remoteAddress, allowed_ranges[i])) {
-					allowed = true
-				}
-			}
-
-			if (!allowed) {
-				self.mergeatron.log.debug('Received post from blocked ip: ' + request.connection.remoteAddress);
-				response.writeHead(403, { 'Content-Type': 'text/plain' });
-				response.end();
-				return;
-			}
+			self.mergeatron.log.debug('Received post from blocked ip: ' + request.connection.remoteAddress);
+			response.writeHead(403, { 'Content-Type': 'text/plain' });
+			response.end();
+			return;
 		}
 
 		if (typeof request.headers['x-github-event'] == 'undefined' || allowed_events.indexOf(request.headers['x-github-event']) == -1) {
@@ -241,7 +235,7 @@ GitHub.prototype.checkFiles = function(pull) {
  */
 GitHub.prototype.processPull = function(pull) {
 	var self = this;
-	this.mergeatron.db.findPull(pull.number, pull.repo, function(error, item) {
+	this.mergeatron.db.findPull(pull.number, function(error, item) {
 		var new_pull = false,
 			ssh_url = pull.head.repo.ssh_url,
 			branch = pull.head.label.split(':')[1];
@@ -264,7 +258,7 @@ GitHub.prototype.processPull = function(pull) {
 					}
 				});
 			});
-			self.mergeatron.db.updatePull(pull.number, pull.repo, { files: pull.files });
+			self.mergeatron.db.updatePull(pull.number, { files: pull.files });
 			pull.jobs = item.jobs;
 		}
 
@@ -319,22 +313,14 @@ GitHub.prototype.processPull = function(pull) {
  * @param description {String}
  */
 GitHub.prototype.createStatus = function(sha, user, repo, state, build_url, description) {
-	var self = this, args = arguments;
-    self.mergeatron.log.info('creating status ' + state + ' for sha ' + sha + ' for build_url ' + build_url);
-    this.api.statuses.create({
+	this.api.statuses.create({
 		user: user,
 		repo: repo,
 		sha: sha,
 		state: state,
 		target_url: build_url,
 		description: description
-	}, function(error, resp) {
-        if (error) {
-          self.mergeatron.log.error(error);
-          self.mergeatron.log.error(args);
-          return;
-        }
-    });
+	});
 };
 
 /**
@@ -378,16 +364,6 @@ GitHub.prototype.createComment = function(pull, sha, file, position, comment) {
 GitHub.prototype.handlePullRequest = function(pull) {
 	// Check if this came through a webhooks setup
 	if (pull.action !== undefined) {
-		if (pull.action == 'closed') {
-			if (pull.pull_request.merged == true) {
-				this.mergeatron.emit('pull.merged', pull);
-			} else {
-				this.mergeatron.emit('pull.closed', pull);
-			}
-
-			return;
-		}
-
 		if (pull.action != 'synchronize' && pull.action != 'opened') {
 			this.mergeatron.log.debug('Not building pull request, action not supported', { pull_number: pull.number, action: pull.action });
 			return;
@@ -428,11 +404,10 @@ GitHub.prototype.handlePullRequest = function(pull) {
 GitHub.prototype.handleIssueComment = function(comment) {
 	// This event will pick up comments on issues and pull requests but we only care about pull requests
 	if (comment.issue.pull_request.html_url == null) {
-		this.mergeatron.log.debug('Ignoring non-pull request issue notification');
 		return;
 	}
 
-	if (comment.comment.body.indexOf('@' + this.config.auth.user + ' retest') != -1) {
+	if (comment.comment.body.indexOf('@' + this.config.auth.user + ' retest') == -1) {
 		this.mergeatron.log.debug('Received retest request for pull', { pull_number: comment.issue.number, repo: comment.repository.name });
 
 		var self = this;
