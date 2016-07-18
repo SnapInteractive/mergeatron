@@ -49,8 +49,6 @@ Jenkins.prototype.findProjectByRepo = function(repo) {
 			found = project;
 		}
 	});
-
-	this.mergeatron.log.info('Found project by repo: ', repo, '; project: ', found);
 	return found;
 };
 
@@ -188,7 +186,6 @@ Jenkins.prototype.pullFound = function(pull) {
  * @param pull {Object}
  */
 Jenkins.prototype.checkJob = function(pull) {
-	this.mergeatron.log.info('Inside checkJob for pull: ', pull);
 	var self = this,
 		job = this.findUnfinishedJob(pull),
 		project = this.findProjectByRepo(pull.repo),

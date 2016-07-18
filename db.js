@@ -5,9 +5,8 @@ exports.init = function() {
 
 	// mongo abstraction layer
 	var MongoDB = function() {
-		//this.connection = require('mongojs').connect(config.database, ['pulls']);
 		var mongojs = require('mongojs')
-		this.connection = mongojs('mongodb://' + config.auth.host + ':' + config.auth.port + '/pulls')
+		this.connection = mongojs(config.auth.host + ':' + config.auth.port + '/' + config.database, config.collections);
 	};
 
 	// pull methods
@@ -32,7 +31,7 @@ exports.init = function() {
 	};
 
 	MongoDB.prototype.findPullsByJobStatus = function(statuses, callback) {
-		this.connection.pulls.find({ 'jobs.status': { $in: statuses }}).forEach(callback);
+		this.connection.collection('pulls').find({ 'jobs.status': { $in: statuses }}).forEach(callback);
 	};
 
 	// job methods

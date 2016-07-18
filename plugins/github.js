@@ -236,6 +236,9 @@ GitHub.prototype.checkFiles = function(pull) {
 GitHub.prototype.processPull = function(pull) {
 	var self = this;
 	this.mergeatron.db.findPull(pull.number, function(error, item) {
+		if (!pull || !pull.head || !pull.head.repo) {
+			return;
+		}
 		var new_pull = false,
 			ssh_url = pull.head.repo.ssh_url,
 			branch = pull.head.label.split(':')[1];
