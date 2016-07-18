@@ -316,7 +316,7 @@ GitHub.prototype.processPull = function(pull) {
  * @param description {String}
  */
 GitHub.prototype.createStatus = function(sha, user, repo, state, build_url, description) {
-	this.api.statuses.create({
+	this.api.repos.create({
 		user: user,
 		repo: repo,
 		sha: sha,

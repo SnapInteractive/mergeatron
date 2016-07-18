@@ -186,10 +186,15 @@ Jenkins.prototype.pullFound = function(pull) {
  * @param pull {Object}
  */
 Jenkins.prototype.checkJob = function(pull) {
-	var self = this,
-		job = this.findUnfinishedJob(pull),
-		project = this.findProjectByRepo(pull.repo),
-		options = {
+	var self = this;
+	var job = this.findUnfinishedJob(pull);
+	var project = this.findProjectByRepo(pull.repo);
+
+	if (!project) {
+		return;
+	}
+
+	var	options = {
 			url: url.format({
 				protocol: this.config.protocol,
 				host: this.config.host,
