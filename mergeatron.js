@@ -17,7 +17,7 @@ var config = require('./config').config,
  */
 var Mergeatron = function(db, config) {
 	this.db = db;
-	this.logger = new (winston.Logger)({
+	this.log = new (winston.Logger)({
 		level: 'debug',
 		transports: [
 			new (winston.transports.Console)(),
@@ -35,7 +35,7 @@ var mergeatron = new Mergeatron(db, config);
 config.plugin_dirs.forEach(function(dir) {
 	fs.readdir(dir, function(err, files) {
 		if (err) {
-			logger.log('error', (err));
+			mergeatron.log.error(err);
 			process.exit(1);
 		}
 
@@ -48,7 +48,7 @@ config.plugin_dirs.forEach(function(dir) {
 				continue;
 			}
 
-			logger.log('info', 'Loading plugin: ' + pluginName);
+			mergeatron.log.info('Loading plugin: ' + pluginName);
 
 			if (config.plugins && config.plugins[pluginName]) {
 				conf = config.plugins[pluginName];
@@ -57,7 +57,7 @@ config.plugin_dirs.forEach(function(dir) {
 			if (conf.enabled === undefined || conf.enabled) {
 				require(filename).init(conf, mergeatron);
 			} else {
-				logger.log('info', 'Not loading disabled plugin ' + pluginName);
+				mergeatron.log.info('Not loading disabled plugin ' + pluginName);
 			}
 		}
 	});
