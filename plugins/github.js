@@ -75,19 +75,19 @@ GitHub.prototype.setup = function() {
  * @method setupServer
  */
 GitHub.prototype.setupServer = function() {
-	this.mergeatron.log('debug', 'Setting up local server on port ' + this.config.port);
+	this.logger.log('debug', 'Setting up local server on port ' + this.config.port);
 
 	var self = this;
 	http.createServer(function(request, response) {
 		if (allowed_ips.indexOf(request.connection.remoteAddress) == -1) {
-			self.mergeatron.log('debug', 'Received post from blocked ip: ' + request.connection.remoteAddress);
+			self.logger.log('debug', 'Received post from blocked ip: ' + request.connection.remoteAddress);
 			response.writeHead(403, { 'Content-Type': 'text/plain' });
 			response.end();
 			return;
 		}
 
 		if (typeof request.headers['x-github-event'] == 'undefined' || allowed_events.indexOf(request.headers['x-github-event']) == -1) {
-			self.mergeatron.log('debug', 'Received post for unsupported event: ' + request.headers['x-github-event']);
+			self.logger.log('debug', 'Received post for unsupported event: ' + request.headers['x-github-event']);
 			response.writeHead(501, { 'Content-Type': 'text/plain' });
 			response.write('Unsupported event type');
 			response.end();
@@ -100,7 +100,7 @@ GitHub.prototype.setupServer = function() {
 		});
 
 		request.on('end', function() {
-			self.mergeatron.log('debug', 'Received post for event: ' + request.headers['x-github-event']);
+			self.logger.log('debug', 'Received post for event: ' + request.headers['x-github-event']);
 			self.events.emit(request.headers['x-github-event'], JSON.parse(data));
 		});
 
@@ -115,13 +115,13 @@ GitHub.prototype.setupServer = function() {
  * @method checkRepos
  */
 GitHub.prototype.checkRepos = function() {
-	this.mergeatron.log('debug', 'Polling github for new and updated Pull Requests');
+	this.logger.log('debug', 'Polling github for new and updated Pull Requests');
 
 	var self = this;
 	this.config.repos.forEach(function(repo) {
 		self.api.pullRequests.getAll({ 'user': self.config.user, 'repo': repo, 'state': 'open' }, function(error, resp) {
 			if (error) {
-				self.mergeatron.log('error', (error));
+				self.logger.log('error', (error));
 				return;
 			}
 
@@ -137,7 +137,7 @@ GitHub.prototype.checkRepos = function() {
 				// it does when requesting a single, specific, pull request. So we have to
 				self.api.pullRequests.get({ 'user': self.config.user, 'repo': repo, 'number': number }, function(error, pull) {
 					if (error) {
-						self.mergeatron.log('error', (error));
+						self.logger.log('error', (error));
 						return;
 					}
 
@@ -156,12 +156,12 @@ GitHub.prototype.checkRepos = function() {
  * @param pull {Object}
  */
 GitHub.prototype.checkFiles = function(pull) {
-	this.mergeatron.log('debug', 'Checking files for pull request', { pull_number: pull.number, repo: pull.repo });
+	this.logger.log('debug', 'Checking files for pull request', { pull_number: pull.number, repo: pull.repo });
 
 	var self = this;
 	this.api.pullRequests.getFiles({ 'user': this.config.user, 'repo': pull.repo, 'number': pull.number }, function(err, files) {
 		if (err) {
-			self.mergeatron.log('error', (err));
+			self.logger.log('error', (err));
 			return;
 		}
 
@@ -220,7 +220,7 @@ GitHub.prototype.checkFiles = function(pull) {
 		if (pull.files.length > 0) {
 			self.mergeatron.emit('pull.found', pull);
 		} else {
-			self.mergeatron.log('info', 'Skipping pull request, no modified files found', { pull_number: pull.number, repo: pull.repo });
+			self.logger.log('info', 'Skipping pull request, no modified files found', { pull_number: pull.number, repo: pull.repo });
 		}
 	});
 };
@@ -247,7 +247,7 @@ GitHub.prototype.processPull = function(pull) {
 			new_pull = true;
 			self.mergeatron.db.insertPull(pull, function(err) {
 				if (err) {
-					self.mergeatron.log('error' , (err));
+					self.logger.log('error' , (err));
 					process.exit(1);
 				}
 			});
@@ -368,7 +368,7 @@ GitHub.prototype.handlePullRequest = function(pull) {
 	// Check if this came through a webhooks setup
 	if (pull.action !== undefined) {
 		if (pull.action != 'synchronize' && pull.action != 'opened') {
-			this.mergeatron.log('debug', 'Not building pull request, action not supported', { pull_number: pull.number, action: pull.action });
+			this.logger.log('debug', 'Not building pull request, action not supported', { pull_number: pull.number, action: pull.action });
 			return;
 		}
 
@@ -379,12 +379,12 @@ GitHub.prototype.handlePullRequest = function(pull) {
 	// In that case we want to allow the build to be attempted. We only want to prevent it when
 	// the mergeable flag is explicitly set to false.
 	if (pull.mergeable !== undefined && pull.mergeable === false) {
-		this.mergeatron.log('debug', 'Not building pull request, not in mergeable state', { pull_number: pull.number, mergeable: pull.mergeable });
+		this.logger.log('debug', 'Not building pull request, not in mergeable state', { pull_number: pull.number, mergeable: pull.mergeable });
 		return;
 	}
 
 	if (pull.body && pull.body.indexOf('@' + this.config.user + ' ignore') != -1) {
-		this.mergeatron.log('debug', 'Not building pull request, flagged to be ignored', { pull_number: pull.number });
+		this.logger.log('debug', 'Not building pull request, flagged to be ignored', { pull_number: pull.number });
 		return;
 	}
 
@@ -411,12 +411,12 @@ GitHub.prototype.handleIssueComment = function(comment) {
 	}
 
 	if (comment.comment.body.indexOf('@' + this.config.auth.user + ' retest') == -1) {
-		this.mergeatron.log('debug', 'Received retest request for pull', { pull_number: comment.issue.number, repo: comment.repository.name });
+		this.logger.log('debug', 'Received retest request for pull', { pull_number: comment.issue.number, repo: comment.repository.name });
 
 		var self = this;
 		this.api.pullRequests.get({ 'user': this.config.user, 'repo': comment.repository.name, 'number': comment.issue.number }, function(error, pull) {
 			if (error) {
-				self.mergeatron.log('error', (error));
+				self.logger.log('error', (error));
 				return;
 			}
 
