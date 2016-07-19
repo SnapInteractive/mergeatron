@@ -64,7 +64,7 @@ Jenkins.prototype.setup = function() {
 			var run_jenkins = function() {
 				self.mergeatron.db.findPullsByJobStatus(['new', 'started'], function(err, pull) {
 					if (err) {
-						self.mergeatron.log.error(err);
+						self.mergeatron.log('error', (err));
 						process.exit(1);
 					}
 
@@ -121,12 +121,12 @@ Jenkins.prototype.buildPull = function(pull, number, sha, ssh_url, branch, updat
 		};
 	}
 
-	this.mergeatron.log.info('Starting build for pull', { pull_number: pull.number, project: project.name });
+	this.mergeatron.log('info', 'Starting build for pull', { pull_number: pull.number, project: project.name });
 
 	var self = this;
 	request(options, function(error) {
 		if (error) {
-			self.mergeatron.log.error(error);
+			self.mergeatron.log('error', (error));
 			return;
 		}
 
@@ -155,7 +155,7 @@ Jenkins.prototype.pullFound = function(pull) {
 	}
 
 	if (!project.rules) {
-		this.mergeatron.log.debug('Validating pull with no rules', { pull: pull.number, project: project.name });
+		this.mergeatron.log('debug', 'Validating pull with no rules', { pull: pull.number, project: project.name });
 		this.mergeatron.emit('pull.validated', pull);
 		return;
 	}
@@ -167,14 +167,14 @@ Jenkins.prototype.pullFound = function(pull) {
 
 		for (var y in project.rules) {
 			if (pull.files[x].filename.match(project.rules[y])) {
-				this.mergeatron.log.debug('Validating pull with rules', { pull: pull.number, project: project.name });
+				this.mergeatron.log('debug', 'Validating pull with rules', { pull: pull.number, project: project.name });
 				this.mergeatron.emit('pull.validated', pull);
 				return;
 			}
 		}
 	}
 
-	this.mergeatron.log.debug('Invalidating pull with rules', { pull: pull.number, project: project.name });
+	this.mergeatron.log('debug', 'Invalidating pull with rules', { pull: pull.number, project: project.name });
 };
 
 /**
@@ -214,7 +214,7 @@ Jenkins.prototype.checkJob = function(pull) {
 
 	request(options, function(error, response) {
 		if (error) {
-			self.mergeatron.log.error('could not connect to jenkins, there seems to be a connectivity issue!');
+			self.mergeatron.log('error', 'could not connect to jenkins, there seems to be a connectivity issue!');
 			return;
 		}
 
@@ -283,16 +283,16 @@ Jenkins.prototype.processArtifacts = function(build, pull) {
 	var self = this;
 	request(options, function(err, response) {
 		if (err) {
-			self.mergeatron.log.error(err);
+			self.mergeatron.log('error', (err));
 			return;
 		}
 
-		self.mergeatron.log.debug('Retrieved artifacts for build', { build: build.number, project: project.name });
+		self.mergeatron.log('debug', 'Retrieved artifacts for build', { build: build.number, project: project.name });
 
 		response.body.artifacts.forEach(function(artifact) {
 			artifact.url = self.config.protocol + '://' + self.config.host + '/job/' + project.name + '/' + build.number + '/artifact/' + artifact.relativePath;
 
-			self.mergeatron.log.debug('Found artifact for build', { build: build.number, url: artifact.url });
+			self.mergeatron.log('debug', 'Found artifact for build', { build: build.number, url: artifact.url });
 			self.mergeatron.emit('build.artifact_found', build, pull, artifact);
 		});
 	});
@@ -318,7 +318,7 @@ Jenkins.prototype.downloadArtifact = function(build, pull, artifact) {
 
 	request(options, function(err, response) {
 		if (err) {
-			self.mergeatron.log.error(err);
+			self.mergeatron.log('error', (err));
 			return;
 		}
 
