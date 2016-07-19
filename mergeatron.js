@@ -34,7 +34,7 @@ var mergeatron = new Mergeatron(db, config);
 config.plugin_dirs.forEach(function(dir) {
 	fs.readdir(dir, function(err, files) {
 		if (err) {
-			mergeatron.log('error', (err);
+			mergeatron.log('error', (err));
 			process.exit(1);
 		}
 
