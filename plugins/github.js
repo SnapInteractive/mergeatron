@@ -316,7 +316,7 @@ GitHub.prototype.processPull = function(pull) {
  * @param description {String}
  */
 GitHub.prototype.createStatus = function(sha, user, repo, state, build_url, description) {
-	this.api.repos.create({
+	this.api.repos.createStatus({
 		user: user,
 		repo: repo,
 		sha: sha,
@@ -338,7 +338,7 @@ GitHub.prototype.createStatus = function(sha, user, repo, state, build_url, desc
  */
 GitHub.prototype.createComment = function(pull, sha, file, position, comment) {
 	if (!file && !position && !comment) {
-		this.api.issues.createComment({
+		this.api.pullRequests.createComment({
 			user: this.config.user,
 			repo: pull.repo,
 			number: pull.number,
